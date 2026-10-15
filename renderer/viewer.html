@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>flip</title>
+<link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+<div id="browse">
+  <div id="left">
+    <input id="search" type="text" placeholder="/ search title, author, tags" spellcheck="false">
+    <div id="list"></div>
+  </div>
+  <div id="right">
+    <div id="grid"></div>
+  </div>
+</div>
+<div id="reader"></div>
+<div id="pos"></div>
+<div id="dock">
+  <input id="size" type="range" min="4" max="100" value="15" step="4">
+  <span class="pct" id="pct">15%</span>
+  <button type="button" id="prev">Prev</button>
+  <button type="button" id="next">Next</button>
+  <button type="button" id="fs">Fullscreen</button>
+  <button type="button" id="focusBtn">Focus</button>
+  <button type="button" id="helpBtn">Help</button>
+  <button type="button" id="back">List</button>
+  <button type="button" id="exit">Exit</button>
+</div>
+<div id="help">
+  <h2>Keys — reader</h2>
+  <table>
+    <tr><td><kbd>j</kbd> / <kbd>k</kbd></td><td>scroll down / up (hold to keep scrolling)</td></tr>
+    <tr><td><kbd>[</kbd> / <kbd>]</kbd></td><td>narrower / wider (5%)</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>wheel</kbd></td><td>resize</td></tr>
+    <tr><td><kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd></td><td>width 100% / 80% / 50%</td></tr>
+    <tr><td><kbd>0</kbd></td><td>reset width</td></tr>
+    <tr><td><kbd>m</kbd></td><td>focus current image (fit to screen)</td></tr>
+    <tr><td><kbd>f</kbd></td><td>toggle fullscreen</td></tr>
+    <tr><td><kbd>&larr;</kbd> / <kbd>&rarr;</kbd> or <kbd>p</kbd> / <kbd>n</kbd></td><td>prev / next comic</td></tr>
+    <tr><td><kbd>h</kbd> / <kbd>?</kbd></td><td>show/hide this help</td></tr>
+    <tr><td><kbd>q</kbd> / <kbd>Backspace</kbd></td><td>back to list</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>close help / exit fullscreen</td></tr>
+  </table>
+  <h2>Keys — browse</h2>
+  <table>
+    <tr><td><kbd>j</kbd> / <kbd>k</kbd> or <kbd>&uarr;</kbd> / <kbd>&darr;</kbd></td><td>move</td></tr>
+    <tr><td><kbd>n</kbd> / <kbd>u</kbd></td><td>scroll gallery</td></tr>
+    <tr><td><kbd>g</kbd> / <kbd>G</kbd></td><td>first / last</td></tr>
+    <tr><td><kbd>/</kbd></td><td>search</td></tr>
+    <tr><td><kbd>Enter</kbd></td><td>read</td></tr>
+    <tr><td><kbd>q</kbd></td><td>quit</td></tr>
+  </table>
+  <button type="button" id="helpClose">Close</button>
+</div>
+<div id="focus">
+  <img id="focusImg" alt="" draggable="false">
+  <div id="focusCaption"></div>
+</div>
+<script src="viewer.js"></script>
+</body>
+</html>

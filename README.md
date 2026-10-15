@@ -1,23 +1,31 @@
-# flip-electron (experimental)
+# flip-electron (experiment)
 
-Renders the `flip` viewer in Electron instead of Brave `--app` mode.
-The bash driver, viewer HTML/CSS/JS, and discovery logic are all unchanged —
-this only swaps the rendering engine.
+Full Electron port of `flip`: the Node main process does discovery in-process and
+streams comics to the renderer over IPC, instead of a bash driver generating a
+JSON-injected HTML file.
 
 ## Setup
 
     cd ~/flip-electron
-    npm install --save-dev electron
+    npm install
 
 ## Run
 
-    ./test.sh /path/to/images
+    ./test.sh [-s|-r] <directory>
 
-`test.sh` builds flip's HTML for the directory (single-album, reader mode) and
-opens it in an Electron window, reusing the real viewer files from
-`~/.config/flip/`.
+- no flag → browse comics under `DIR` (gallery)
+- `-s` / `--single` → treat `DIR` as one comic (gallery)
+- `-r` / `--read` → treat `DIR` as one comic and open the reader directly
 
-The key bit is in `main.js`: `webSecurity: false` lets the `file://` page load
-`file://` images (the Electron equivalent of Brave's
-`--allow-file-access-from-files`), and `FLIP_PROFILE` gives an isolated profile
-(the `--user-data-dir` equivalent).
+## Layout
+
+    main.js       Node main: CLI args, fs discovery, xattrs, window, IPC
+    preload.js    contextBridge → window.flip API
+    renderer/     viewer.html / viewer.css / viewer.js (the UI)
+
+## Differences vs. the Brave version
+
+- Discovery runs in Node (`fs.readdir`) instead of `find`/`sort`/`jq`, and streams
+  comics to the renderer as they're found (the window opens instantly).
+- Images still load via `file://` URLs; `webSecurity: false` replaces Brave's
+  `--allow-file-access-from-files`.
