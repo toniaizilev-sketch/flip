@@ -67,12 +67,17 @@ body.read #pos {
 }
 #flash {
   position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  max-width: 90vw;
+  padding: 18px 32px;
   font-size: 44px; font-weight: 700; color: #fff;
-  text-align: center; max-width: 90vw;
+  text-align: center;
   pointer-events: none; user-select: none;
   opacity: 0; transition: opacity .2s ease;
   z-index: 2147483639;
-  text-shadow: 0 2px 14px rgba(0,0,0,.85);
+  background: rgba(0, 0, 0, .62);
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), 0 12px 40px rgba(0, 0, 0, .6);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, .95), 0 0 30px rgba(0, 0, 0, .7);
 }
 #flash.show { opacity: 1; }
 #dock {
