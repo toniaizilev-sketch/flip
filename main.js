@@ -56,6 +56,19 @@ function readConfig() {
   return cfg;
 }
 
+function stateFile() {
+  return process.env.FLIP_STATE || path.join(os.homedir(), ".config", "flip", "state.json");
+}
+
+function readState() {
+  try {
+    const data = JSON.parse(fs.readFileSync(stateFile(), "utf8"));
+    return data && typeof data === "object" && !Array.isArray(data) ? data : {};
+  } catch {
+    return {};
+  }
+}
+
 function parseWindowSize(s) {
   const m = String(s || "").match(/(\d+)\s*[x,]\s*(\d+)/);
   if (m) return { width: parseInt(m[1], 10), height: parseInt(m[2], 10) };
@@ -181,13 +194,20 @@ app.whenReady().then(() => {
         win.webContents.send("flip:comic", await discoverComic(d, id++));
       }
       if (win && !win.isDestroyed()) {
-        win.webContents.send("flip:done", { autoRead: args.read });
+        win.webContents.send("flip:done", { autoRead: args.read, state: readState() });
       }
     } catch (e) {
       if (win && !win.isDestroyed()) {
         win.webContents.send("flip:done", { error: (e && e.message) || String(e) });
       }
     }
+  });
+
+  ipcMain.on("flip:saveState", (_e, state) => {
+    try {
+      fs.mkdirSync(path.dirname(stateFile()), { recursive: true });
+      fs.writeFileSync(stateFile(), JSON.stringify(state));
+    } catch { /* ignore */ }
   });
 });
 

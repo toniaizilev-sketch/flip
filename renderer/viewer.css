@@ -26,12 +26,28 @@ html, body {
 #right { flex: 1; overflow-y: auto; padding: 12px; scrollbar-width: none; }
 #right::-webkit-scrollbar { display: none; }
 #grid { display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; }
-#grid img { width: calc(var(--tw) * 1vw); height: auto; background: #1a1a1a; border-radius: 3px; }
+#grid .thumb { position: relative; line-height: 0; border-radius: 3px; }
+#grid .thumb img { display: block; width: calc(var(--tw) * 1vw); height: auto; background: #1a1a1a; border-radius: 3px; }
 #grid img.pending { min-height: calc(var(--tw) * 1.4vw); }
-#grid img.last {
-  outline: 3px solid #7aa2ff;
-  outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(122, 162, 255, 0.35), 0 0 20px rgba(122, 162, 255, 0.7);
+
+/* last-viewed image: orange outline + glow + pin badge */
+#grid .thumb.last {
+  outline: 3px solid #ff9500;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgba(255, 149, 0, 0.35), 0 0 26px rgba(255, 149, 0, 0.85);
+}
+#grid .thumb.last img {
+  filter: brightness(1.18) saturate(1.15);
+}
+#grid .thumb.last::after {
+  content: "📍";
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 16px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+  pointer-events: none;
 }
 #empty { color: #777; padding: 30px 4px; }
 #reader { display: none; position: relative; height: 100vh; overflow-y: auto; scrollbar-width: none; padding-bottom: 72px; }

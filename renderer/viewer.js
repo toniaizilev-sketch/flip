@@ -41,6 +41,10 @@
 
   function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
 
+  function saveLastRead() {
+    if (window.flip && window.flip.saveState) window.flip.saveState(lastRead);
+  }
+
   function fileURL(dir, rel) {
     return "file://" + dir.split("/").map(encodeURIComponent).join("/")
       + "/" + rel.split("/").map(encodeURIComponent).join("/");
@@ -144,11 +148,14 @@
     }
     rightEl.scrollTop = 0;
     c.imgs.forEach(function (rel, i) {
+      var thumb = document.createElement("div");
+      thumb.className = "thumb" + (i === lastRead[c.dir] ? " last" : "");
       var img = document.createElement("img");
       img.setAttribute("data-src", fileURL(c.dir, rel));
       img.setAttribute("data-index", String(i));
-      img.className = "pending" + (i === lastRead[c.id] ? " last" : "");
-      gridEl.appendChild(img);
+      img.className = "pending";
+      thumb.appendChild(img);
+      gridEl.appendChild(thumb);
     });
     observeGrid();
   }
@@ -158,6 +165,10 @@
   function openReader(startIndex) {
     var c = cur;
     if (!c || !c.imgs.length) return;
+    if (typeof startIndex !== "number") {
+      var remembered = lastRead[c.dir];
+      startIndex = (typeof remembered === "number" && remembered >= 0 && remembered < c.imgs.length) ? remembered : 0;
+    }
     mode = "read";
     browseEl.style.display = "none";
     readerEl.style.display = "block";
@@ -207,6 +218,7 @@
     if (mode !== "read") return false;
     var target = sel + delta;
     if (target < 0 || target >= visible.length) return false;
+    if (cur && cur.dir) { lastRead[cur.dir] = current; saveLastRead(); }
     sel = target;
     cur = visible[sel];
     var rows = listEl.children;
@@ -219,7 +231,8 @@
   }
 
   function backToBrowse() {
-    lastRead[cur.id] = current;
+    lastRead[cur.dir] = current;
+    saveLastRead();
     mode = "browse";
     readerEl.style.display = "none";
     browseEl.style.display = "flex";
@@ -229,13 +242,14 @@
   }
 
   function highlightLastRead() {
-    var last = lastRead[cur.id];
-    var imgs = gridEl.querySelectorAll("img");
-    for (var i = 0; i < imgs.length; i++) {
-      imgs[i].classList.toggle("last", Number(imgs[i].getAttribute("data-index")) === last);
+    var last = lastRead[cur.dir];
+    var thumbs = gridEl.querySelectorAll(".thumb");
+    for (var i = 0; i < thumbs.length; i++) {
+      var idx = thumbs[i].querySelector("img");
+      thumbs[i].classList.toggle("last", !!idx && Number(idx.getAttribute("data-index")) === last);
     }
     if (typeof last === "number") {
-      var t = gridEl.querySelector('img[data-index="' + last + '"]');
+      var t = gridEl.querySelector('.thumb img[data-index="' + last + '"]');
       if (t) t.scrollIntoView({ block: "center" });
     }
   }
@@ -477,8 +491,10 @@
         event.preventDefault(); exitFocus();
       } else if (event.key === "j" || event.key === "J" || event.key === "ArrowRight" || event.key === "ArrowDown" || event.key === " ") {
         event.preventDefault(); focusNav(1);
-      } else if (event.key === "k" || event.key === "K" || event.key === "ArrowLeft" || event.key === "ArrowUp" || event.key === "Backspace") {
+      } else if (event.key === "k" || event.key === "K" || event.key === "ArrowLeft" || event.key === "ArrowUp") {
         event.preventDefault(); focusNav(-1);
+      } else if (event.key === "Backspace") {
+        event.preventDefault(); exitFocus(); backToBrowse();
       } else if (event.key === "f" || event.key === "F") {
         event.preventDefault(); toggleFullscreen();
       } else if (event.key === "h" || event.key === "H" || event.key === "?") {
@@ -551,6 +567,9 @@
     else if (event.key === "u" || event.key === "U") heldU = false;
   });
   window.addEventListener("blur", function () { heldJ = false; heldK = false; heldN = false; heldU = false; });
+  window.addEventListener("beforeunload", function () {
+    if (cur && cur.dir) { lastRead[cur.dir] = current; saveLastRead(); }
+  });
 
   setTW(RESET_T);
   setRW(RESET_W);
@@ -565,6 +584,7 @@
     window.flip.onDone(function (opts) {
       if (opts.error) { posEl.textContent = opts.error; return; }
       AUTO_READ = !!opts.autoRead;
+      lastRead = opts.state || {};
       if (AUTO_READ && COMICS.length === 1) {
         visible = COMICS;
         sel = 0;
