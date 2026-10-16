@@ -52,6 +52,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
   var gPending = false, gTimer = 0;
   var overscroll = 0;
   var sortMode = "natural";
+  var sortDesc = false;
   var metaComic = null;
   var metaTags = [];
   var metaAllTags = [];
@@ -113,25 +114,32 @@ var metaCancelBtn = document.getElementById("metaCancel");
 
   function sortComics() {
     var key = sortMode;
+    var desc = sortDesc;
     COMICS.sort(function (a, b) {
+      var r = 0;
       if (key === "title") {
-        return (a.title || "").localeCompare(b.title || "", undefined, { numeric: true, sensitivity: "base" });
+        r = (a.title || "").localeCompare(b.title || "", undefined, { numeric: true, sensitivity: "base" });
+      } else if (key === "author") {
+        r = (a.author || "").localeCompare(b.author || "", undefined, { sensitivity: "base" });
+        if (r === 0) r = (a.title || "").localeCompare(b.title || "", undefined, { numeric: true, sensitivity: "base" });
+      } else if (key === "date") {
+        r = (a.date || 0) - (b.date || 0);
+      } else {
+        r = (a.id || 0) - (b.id || 0);
       }
-      if (key === "author") {
-        var r = (a.author || "").localeCompare(b.author || "", undefined, { sensitivity: "base" });
-        if (r !== 0) return r;
-        return (a.title || "").localeCompare(b.title || "", undefined, { numeric: true, sensitivity: "base" });
-      }
-      if (key === "date") {
-        return (b.date || 0) - (a.date || 0);
-      }
-      return (a.id || 0) - (b.id || 0);
+      return desc ? -r : r;
     });
   }
 
   function cycleSort() {
     var modes = ["natural", "title", "author", "date"];
     sortMode = modes[(modes.indexOf(sortMode) + 1) % modes.length];
+    sortComics();
+    applyFilter();
+  }
+
+  function toggleSortDir() {
+    sortDesc = !sortDesc;
     sortComics();
     applyFilter();
   }
@@ -179,7 +187,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     var s = (sel + 1) + "/" + visible.length + " — " + c.title;
     if (c.imgs.length) s += " · " + c.imgs.length + " pages";
     s += " · " + gridScrollPct() + "%";
-    s += " [" + sortMode + "]";
+    s += " [" + sortMode + (sortDesc ? " desc" : " asc") + "]";
     posEl.textContent = s;
   }
 
@@ -669,6 +677,11 @@ var metaCancelBtn = document.getElementById("metaCancel");
       if (event.key === "Escape") { event.preventDefault(); closeMeta(); }
       return;
     }
+    if (event.ctrlKey && event.key === " ") {
+      event.preventDefault();
+      if (cur) openMeta(cur);
+      return;
+    }
     if (focus) {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -747,7 +760,8 @@ var metaCancelBtn = document.getElementById("metaCancel");
     else if (event.key === "g") { event.preventDefault(); gPending = true; gTimer = setTimeout(function () { gPending = false; }, 800); }
     else if (event.key === "G") { event.preventDefault(); scrollGridBottom(); }
     else if (event.key === "/") { event.preventDefault(); searchEl.focus(); }
-    else if (event.key === "s" || event.key === "S") { event.preventDefault(); cycleSort(); }
+    else if (event.key === "s") { event.preventDefault(); cycleSort(); }
+    else if (event.key === "S") { event.preventDefault(); toggleSortDir(); }
     else if (event.key === "Enter") { event.preventDefault(); openReader(); }
     else if (event.key === "h" || event.key === "H" || event.key === "?") { event.preventDefault(); toggleHelp(); }
     else if (event.key === "q" || event.key === "Q") { event.preventDefault(); window.close(); }
