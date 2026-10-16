@@ -8,4 +8,5 @@ contextBridge.exposeInMainWorld("flip", {
   onDone: (cb) => ipcRenderer.on("flip:done", (_e, opts) => cb(opts)),
   saveState: (state) => ipcRenderer.send("flip:saveState", state),
   saveMeta: (meta) => ipcRenderer.send("flip:saveMeta", meta),
+  star: (p) => ipcRenderer.send("flip:star", p),
 });

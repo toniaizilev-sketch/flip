@@ -56,6 +56,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
   var overscroll = 0;
   var sortMode = "natural";
   var sortDesc = false;
+  var starFilter = false;
   var metaComic = null;
   var metaTags = [];
   var metaAllTags = [];
@@ -150,6 +151,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
   function applyFilter(preserveDir) {
     var q = searchEl.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
     visible = COMICS.filter(function (c) {
+      if (starFilter && !c.starred) return false;
       var hay = (c.title + " " + c.author + " " + c.tags.join(" ")).toLowerCase();
       return q.every(function (t) { return hay.indexOf(t) !== -1; });
     });
@@ -169,7 +171,14 @@ var metaCancelBtn = document.getElementById("metaCancel");
     visible.forEach(function (c, i) {
       var row = document.createElement("div");
       row.className = "row" + (i === sel ? " sel" : "");
-      var t = document.createElement("div"); t.className = "t"; t.textContent = c.title;
+      var t = document.createElement("div"); t.className = "t";
+      if (c.starred) {
+        var star = document.createElement("span");
+        star.className = "star";
+        star.textContent = "★ ";
+        t.appendChild(star);
+      }
+      t.appendChild(document.createTextNode(c.title));
       var a = document.createElement("div"); a.className = "a"; a.textContent = c.author;
       row.appendChild(t); row.appendChild(a);
       row.addEventListener("click", function () { select(i); });
@@ -191,6 +200,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     if (c.imgs.length) s += " · " + c.imgs.length + " pages";
     s += " · " + gridScrollPct() + "%";
     s += " [" + sortMode + (sortDesc ? " desc" : " asc") + "]";
+    if (starFilter) s += " [starred]";
     posEl.textContent = s;
   }
 
@@ -216,6 +226,20 @@ var metaCancelBtn = document.getElementById("metaCancel");
     saveLastRead();
     highlightLastRead();
     scrollGridTop();
+  }
+
+  function toggleStar() {
+    if (!cur) return;
+    cur.starred = !cur.starred;
+    if (window.flip && window.flip.star) {
+      window.flip.star({ dir: cur.dir, starred: cur.starred });
+    }
+    applyFilter(cur.dir);
+  }
+
+  function toggleStarFilter() {
+    starFilter = !starFilter;
+    applyFilter();
   }
 
   function select(i, force) {
@@ -779,6 +803,8 @@ var metaCancelBtn = document.getElementById("metaCancel");
     else if (event.key === "S") { event.preventDefault(); toggleSortDir(); }
     else if (event.key === "e") { event.preventDefault(); if (cur) openMeta(cur); }
     else if (event.key === "x") { event.preventDefault(); clearLastRead(); }
+    else if (event.key === "r") { event.preventDefault(); toggleStar(); }
+    else if (event.key === "R") { event.preventDefault(); toggleStarFilter(); }
     else if (event.key === "Enter") { event.preventDefault(); openReader(); }
     else if (event.key === "h" || event.key === "H" || event.key === "?") { event.preventDefault(); toggleHelp(); }
     else if (event.key === "q" || event.key === "Q") { event.preventDefault(); window.close(); }
