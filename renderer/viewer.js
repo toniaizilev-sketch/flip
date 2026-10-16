@@ -42,6 +42,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
   var heldJ = false, heldK = false, scrollLeft = 0, scrollRaf = 0;
   var heldN = false, heldU = false, galleryRaf = 0;
   var posRaf = 0;
+  var browsePosRaf = 0;
   var near = false, sliding = false;
   var current = 0;
   var focus = false;
@@ -163,13 +164,28 @@ var metaCancelBtn = document.getElementById("metaCancel");
     });
   }
 
+  function gridScrollPct() {
+    var max = rightEl.scrollHeight - rightEl.clientHeight;
+    if (max <= 0) return 100;
+    return Math.round((rightEl.scrollTop / max) * 100);
+  }
+
   function browsePos() {
     var c = visible[sel];
     if (!c) { posEl.textContent = "0/0"; return; }
     var s = (sel + 1) + "/" + visible.length + " — " + c.title;
     if (c.imgs.length) s += " · " + c.imgs.length + " pages";
+    s += " · " + gridScrollPct() + "%";
     s += " [" + sortMode + "]";
     posEl.textContent = s;
+  }
+
+  function scheduleBrowsePos() {
+    if (browsePosRaf) return;
+    browsePosRaf = requestAnimationFrame(function () {
+      browsePosRaf = 0;
+      browsePos();
+    });
   }
 
   function select(i, force) {
@@ -612,6 +628,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
   }, { passive: true });
 
   readerEl.addEventListener("scroll", scheduleReaderPos, { passive: true });
+  rightEl.addEventListener("scroll", scheduleBrowsePos, { passive: true });
   window.addEventListener("resize", function () { if (mode === "read") scheduleReaderPos(); });
 
   readerEl.addEventListener("click", function (event) {
