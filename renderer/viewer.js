@@ -53,6 +53,8 @@ var metaCancelBtn = document.getElementById("metaCancel");
   var sortMode = "natural";
   var metaComic = null;
   var metaTags = [];
+  var metaAllTags = [];
+  var metaAllAuthors = [];
 
   function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
 
@@ -259,14 +261,23 @@ var metaCancelBtn = document.getElementById("metaCancel");
       if (c.author) authors[c.author] = true;
       (c.tags || []).forEach(function (t) { if (t) tags[t] = true; });
     });
+    metaAllAuthors = Object.keys(authors).sort();
+    metaAllTags = Object.keys(tags).sort();
     metaAuthorListEl.textContent = "";
-    Object.keys(authors).sort().forEach(function (a) {
+    metaAllAuthors.forEach(function (a) {
       var o = document.createElement("option"); o.value = a; metaAuthorListEl.appendChild(o);
     });
     metaTagListEl.textContent = "";
-    Object.keys(tags).sort().forEach(function (t) {
+    metaAllTags.forEach(function (t) {
       var o = document.createElement("option"); o.value = t; metaTagListEl.appendChild(o);
     });
+  }
+
+  function metaTagSuggestion(raw) {
+    var norm = normalizeTag(raw);
+    if (!norm) return null;
+    var matches = metaAllTags.filter(function (t) { return t.indexOf(norm) === 0 && t !== norm; });
+    return matches.length === 1 ? matches[0] : null;
   }
 
   function openMeta(c) {
@@ -579,7 +590,9 @@ var metaCancelBtn = document.getElementById("metaCancel");
   metaTagInputEl.addEventListener("keydown", function (e) {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
-      addMetaTag(metaTagInputEl.value);
+      e.stopPropagation();
+      var sug = metaTagSuggestion(metaTagInputEl.value);
+      addMetaTag(sug || metaTagInputEl.value);
       metaTagInputEl.value = "";
     } else if (e.key === "Backspace" && metaTagInputEl.value === "") {
       if (metaTags.length) { metaTags.pop(); renderMetaChips(); }
