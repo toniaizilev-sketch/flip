@@ -215,6 +215,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     delete lastRead[cur.dir];
     saveLastRead();
     highlightLastRead();
+    scrollGridTop();
   }
 
   function select(i, force) {
