@@ -108,6 +108,32 @@ body.read #pos {
   font: inherit; padding: 6px 12px; border-radius: 6px; cursor: pointer;
 }
 #help button:hover { background: #444; }
+#meta {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: none; width: 360px; max-width: 90vw;
+  padding: 16px 18px;
+  background: rgba(18,18,18,.97); border: 1px solid #333; border-radius: 10px;
+  color: #eee; font: 14px/1.6 system-ui, sans-serif;
+  z-index: 2147483643; user-select: none;
+  box-shadow: 0 12px 40px rgba(0,0,0,.6);
+}
+#meta.show { display: block; }
+#meta h2 { margin: 0 0 10px; font-size: 15px; }
+#meta label { display: block; margin: 8px 0; font-size: 12px; color: #999; }
+#meta input {
+  display: block; width: 100%; box-sizing: border-box;
+  margin-top: 3px; padding: 7px 9px; border-radius: 6px;
+  border: 1px solid #333; background: #1c1c1c; color: #eee; font: inherit;
+  user-select: text;
+}
+#meta .metaBtns { margin-top: 14px; display: flex; gap: 8px; justify-content: flex-end; }
+#meta button {
+  appearance: none; border: 0; background: #333; color: #eee;
+  font: inherit; padding: 6px 12px; border-radius: 6px; cursor: pointer;
+}
+#meta button:hover { background: #444; }
+#meta button.primary { background: #7aa2ff; color: #111; }
+#meta button.primary:hover { background: #8fb1ff; }
 body.focus { overflow: hidden; }
 #focus {
   position: fixed; top: 0; right: 0; bottom: 0; left: 0;

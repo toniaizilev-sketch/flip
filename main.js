@@ -103,6 +103,14 @@ async function getXattr(dir, name) {
   }
 }
 
+async function setXattr(dir, name, value) {
+  if (value) {
+    await execFileAsync("setfattr", ["-n", name, "-v", value, dir]);
+  } else {
+    try { await execFileAsync("setfattr", ["-x", name, dir]); } catch { /* already absent */ }
+  }
+}
+
 // ---- discovery ----
 async function findImages(dir) {
   const out = [];
@@ -140,7 +148,9 @@ async function discoverComic(dir, id) {
   const tagsRaw = await getXattr(dir, "user.xdg.tags");
   const tags = tagsRaw.split(",").map((t) => t.trim()).filter(Boolean);
   const imgs = sortNatural(await findImages(dir)).map((img) => path.relative(dir, img));
-  return { id, dir, title, author, tags, imgs };
+  let date = 0;
+  try { date = (await fsp.stat(dir)).mtimeMs; } catch { /* ignore */ }
+  return { id, dir, title, author, tags, date, imgs };
 }
 
 // ---- app ----
@@ -208,6 +218,16 @@ app.whenReady().then(() => {
       fs.mkdirSync(path.dirname(stateFile()), { recursive: true });
       fs.writeFileSync(stateFile(), JSON.stringify(state));
     } catch { /* ignore */ }
+  });
+
+  ipcMain.on("flip:saveMeta", async (_e, meta) => {
+    try {
+      await setXattr(meta.dir, "user.zine.title", meta.title);
+      await setXattr(meta.dir, "user.zine.author", meta.author);
+      await setXattr(meta.dir, "user.xdg.tags", (meta.tags || []).join(","));
+    } catch (e) {
+      console.error("flip:saveMeta:", e && e.message);
+    }
   });
 });
 

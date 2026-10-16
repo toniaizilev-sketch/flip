@@ -25,6 +25,12 @@
   var focusEl = document.getElementById("focus");
   var focusImg = document.getElementById("focusImg");
   var focusCaption = document.getElementById("focusCaption");
+var metaEl = document.getElementById("meta");
+var metaTitleEl = document.getElementById("metaTitle");
+var metaAuthorEl = document.getElementById("metaAuthor");
+var metaTagsEl = document.getElementById("metaTags");
+var metaSaveBtn = document.getElementById("metaSave");
+var metaCancelBtn = document.getElementById("metaCancel");
 
   var sel = -1, visible = [], mode = "browse";
   var cur = null;
@@ -40,6 +46,8 @@
   var wheelAdvancePending = false;
   var gPending = false, gTimer = 0;
   var overscroll = 0;
+  var sortMode = "natural";
+  var metaComic = null;
 
   function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
 
@@ -95,13 +103,44 @@
 
   // ---- browse ----
 
-  function applyFilter() {
+  function sortComics() {
+    var key = sortMode;
+    COMICS.sort(function (a, b) {
+      if (key === "title") {
+        return (a.title || "").localeCompare(b.title || "", undefined, { numeric: true, sensitivity: "base" });
+      }
+      if (key === "author") {
+        var r = (a.author || "").localeCompare(b.author || "", undefined, { sensitivity: "base" });
+        if (r !== 0) return r;
+        return (a.title || "").localeCompare(b.title || "", undefined, { numeric: true, sensitivity: "base" });
+      }
+      if (key === "date") {
+        return (b.date || 0) - (a.date || 0);
+      }
+      return (a.id || 0) - (b.id || 0);
+    });
+  }
+
+  function cycleSort() {
+    var modes = ["natural", "title", "author", "date"];
+    sortMode = modes[(modes.indexOf(sortMode) + 1) % modes.length];
+    sortComics();
+    applyFilter(cur ? cur.dir : null);
+  }
+
+  function applyFilter(preserveDir) {
     var q = searchEl.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
     visible = COMICS.filter(function (c) {
       var hay = (c.title + " " + c.author + " " + c.tags.join(" ")).toLowerCase();
       return q.every(function (t) { return hay.indexOf(t) !== -1; });
     });
-    sel = visible.length ? 0 : -1;
+    var idx = 0;
+    if (preserveDir) {
+      for (var i = 0; i < visible.length; i++) {
+        if (visible[i].dir === preserveDir) { idx = i; break; }
+      }
+    }
+    sel = visible.length ? idx : -1;
     renderList();
     select(sel, true);
   }
@@ -115,6 +154,7 @@
       var a = document.createElement("div"); a.className = "a"; a.textContent = c.author;
       row.appendChild(t); row.appendChild(a);
       row.addEventListener("click", function () { select(i); });
+      row.addEventListener("dblclick", function () { openMeta(c); });
       listEl.appendChild(row);
     });
   }
@@ -124,6 +164,7 @@
     if (!c) { posEl.textContent = "0/0"; return; }
     var s = (sel + 1) + "/" + visible.length + " — " + c.title;
     if (c.imgs.length) s += " · " + c.imgs.length + " pages";
+    s += " [" + sortMode + "]";
     posEl.textContent = s;
   }
 
@@ -161,6 +202,37 @@
     });
     observeGrid();
     highlightLastRead();
+  }
+
+  function openMeta(c) {
+    metaComic = c;
+    metaTitleEl.value = c.title || "";
+    metaAuthorEl.value = c.author || "";
+    metaTagsEl.value = (c.tags || []).join(", ");
+    metaEl.classList.add("show");
+    metaTitleEl.focus();
+  }
+
+  function closeMeta() {
+    metaEl.classList.remove("show");
+    metaComic = null;
+  }
+
+  function saveMeta() {
+    if (!metaComic) return;
+    var title = metaTitleEl.value.trim();
+    var author = metaAuthorEl.value.trim();
+    var tags = metaTagsEl.value.split(",").map(function (t) { return t.trim(); }).filter(Boolean);
+    var base = metaComic.dir.split("/").pop();
+    metaComic.title = title || base;
+    metaComic.author = author;
+    metaComic.tags = tags;
+    if (window.flip && window.flip.saveMeta) {
+      window.flip.saveMeta({ dir: metaComic.dir, title: title, author: author, tags: tags });
+    }
+    closeMeta();
+    renderList();
+    browsePos();
   }
 
   // ---- read ----
@@ -433,6 +505,8 @@
   document.getElementById("focusBtn").addEventListener("click", enterFocus);
   document.getElementById("helpBtn").addEventListener("click", toggleHelp);
   document.getElementById("helpClose").addEventListener("click", function () { showHelp(false); });
+  metaSaveBtn.addEventListener("click", saveMeta);
+  metaCancelBtn.addEventListener("click", closeMeta);
   focusEl.addEventListener("click", function () { focusNav(1); });
   document.addEventListener("fullscreenchange", updateFs);
   document.addEventListener("webkitfullscreenchange", updateFs);
@@ -494,6 +568,10 @@
   });
 
   document.addEventListener("keydown", function (event) {
+    if (metaEl.classList.contains("show")) {
+      if (event.key === "Escape") { event.preventDefault(); closeMeta(); }
+      return;
+    }
     if (focus) {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -572,6 +650,7 @@
     else if (event.key === "g") { event.preventDefault(); gPending = true; gTimer = setTimeout(function () { gPending = false; }, 800); }
     else if (event.key === "G") { event.preventDefault(); scrollGridBottom(); }
     else if (event.key === "/") { event.preventDefault(); searchEl.focus(); }
+    else if (event.key === "s" || event.key === "S") { event.preventDefault(); cycleSort(); }
     else if (event.key === "Enter") { event.preventDefault(); openReader(); }
     else if (event.key === "h" || event.key === "H" || event.key === "?") { event.preventDefault(); toggleHelp(); }
     else if (event.key === "q" || event.key === "Q") { event.preventDefault(); window.close(); }
