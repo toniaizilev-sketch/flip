@@ -1,4 +1,5 @@
-node_modules/
-pkg/
-src/
-*.pkg.tar.*
+/node_modules/
+/pkg/
+/src/
+/*.pkg.tar.*
+/.git-credentials
