@@ -28,6 +28,7 @@
 var metaEl = document.getElementById("meta");
 var metaTitleEl = document.getElementById("metaTitle");
 var metaAuthorEl = document.getElementById("metaAuthor");
+var metaUrlEl = document.getElementById("metaUrl");
 var metaChipsEl = document.getElementById("metaChips");
 var metaTagInputEl = document.getElementById("metaTagInput");
 var metaAuthorListEl = document.getElementById("metaAuthorList");
@@ -284,6 +285,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     metaComic = c;
     metaTitleEl.value = c.title || "";
     metaAuthorEl.value = c.author || "";
+    metaUrlEl.value = c.url || "";
     metaTags = (c.tags || []).slice();
     renderMetaChips();
     fillMetaSuggestions();
@@ -300,13 +302,15 @@ var metaCancelBtn = document.getElementById("metaCancel");
     if (!metaComic) return;
     var title = metaTitleEl.value.trim();
     var author = metaAuthorEl.value.trim();
+    var url = metaUrlEl.value.trim();
     var tags = metaTags.slice();
     var base = metaComic.dir.split("/").pop();
     metaComic.title = title || base;
     metaComic.author = author;
+    metaComic.url = url;
     metaComic.tags = tags;
     if (window.flip && window.flip.saveMeta) {
-      window.flip.saveMeta({ dir: metaComic.dir, title: title, author: author, tags: tags });
+      window.flip.saveMeta({ dir: metaComic.dir, title: title, author: author, url: url, tags: tags });
     }
     closeMeta();
     renderList();
@@ -587,6 +591,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
   metaCancelBtn.addEventListener("click", closeMeta);
   metaTitleEl.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); saveMeta(); } });
   metaAuthorEl.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); saveMeta(); } });
+  metaUrlEl.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); saveMeta(); } });
   metaTagInputEl.addEventListener("keydown", function (e) {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();

@@ -147,10 +147,11 @@ async function discoverComic(dir, id) {
   const author = await getXattr(dir, "user.zine.author");
   const tagsRaw = await getXattr(dir, "user.xdg.tags");
   const tags = tagsRaw.split(",").map((t) => t.trim()).filter(Boolean);
+  const url = await getXattr(dir, "user.zine.url");
   const imgs = sortNatural(await findImages(dir)).map((img) => path.relative(dir, img));
   let date = 0;
   try { date = (await fsp.stat(dir)).mtimeMs; } catch { /* ignore */ }
-  return { id, dir, title, author, tags, date, imgs };
+  return { id, dir, title, author, tags, url, date, imgs };
 }
 
 // ---- app ----
@@ -225,6 +226,7 @@ app.whenReady().then(() => {
       await setXattr(meta.dir, "user.zine.title", meta.title);
       await setXattr(meta.dir, "user.zine.author", meta.author);
       await setXattr(meta.dir, "user.xdg.tags", (meta.tags || []).join(","));
+      await setXattr(meta.dir, "user.zine.url", meta.url);
       await setXattr(meta.dir, "user.zine.status", "manual");
     } catch (e) {
       console.error("flip:saveMeta:", e && e.message);
