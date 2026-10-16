@@ -41,7 +41,7 @@ function expandTilde(p) {
 }
 
 function readConfig() {
-  const cfg = { root: "", windowSize: "" };
+  const cfg = { root: "", windowSize: "", titleFlash: "" };
   const file = process.env.FLIP_CONFIG || path.join(os.homedir(), ".config", "flip", "config");
   let text = "";
   try { text = fs.readFileSync(file, "utf8"); } catch { return cfg; }
@@ -52,6 +52,7 @@ function readConfig() {
     const val = line.slice(idx + 1).trim();
     if (key === "root") cfg.root = val;
     else if (key === "window_size") cfg.windowSize = val;
+    else if (key === "title_flash") cfg.titleFlash = val;
   }
   return cfg;
 }
@@ -73,6 +74,11 @@ function parseWindowSize(s) {
   const m = String(s || "").match(/(\d+)\s*[x,]\s*(\d+)/);
   if (m) return { width: parseInt(m[1], 10), height: parseInt(m[2], 10) };
   return { width: 1280, height: 840 };
+}
+
+function parseTitleFlash(s) {
+  const n = parseInt(String(s || "").trim(), 10);
+  return isNaN(n) ? 1500 : Math.max(0, n);
 }
 
 // ---- natural sort (approximates `sort -V -f`) ----
@@ -160,6 +166,7 @@ let win = null;
 app.whenReady().then(() => {
   const cfg = readConfig();
   const winSize = parseWindowSize(process.env.FLIP_WINDOW_SIZE || cfg.windowSize);
+  const titleFlash = parseTitleFlash(cfg.titleFlash);
   const args = parseArgs(process.argv.slice(2), process.env.FLIP_ROOT || cfg.root);
 
   if (args.help) {
@@ -205,7 +212,7 @@ app.whenReady().then(() => {
         win.webContents.send("flip:comic", await discoverComic(d, id++));
       }
       if (win && !win.isDestroyed()) {
-        win.webContents.send("flip:done", { autoRead: args.read, state: readState() });
+        win.webContents.send("flip:done", { autoRead: args.read, state: readState(), titleFlash: titleFlash });
       }
     } catch (e) {
       if (win && !win.isDestroyed()) {

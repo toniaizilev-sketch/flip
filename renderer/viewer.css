@@ -65,6 +65,16 @@ html, body {
 body.read #pos {
   top: auto; bottom: 12px; left: 12px; transform: none;
 }
+#flash {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  font-size: 44px; font-weight: 700; color: #fff;
+  text-align: center; max-width: 90vw;
+  pointer-events: none; user-select: none;
+  opacity: 0; transition: opacity .2s ease;
+  z-index: 2147483639;
+  text-shadow: 0 2px 14px rgba(0,0,0,.85);
+}
+#flash.show { opacity: 1; }
 #dock {
   position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%);
   display: flex; align-items: center; gap: 3px; padding: 5px;

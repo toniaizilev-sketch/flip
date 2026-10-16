@@ -3,3 +3,5 @@
 # flip will refuse to start until root points to a real directory.
 root=~/path/to/your/comics
 window_size=1280,840
+# how long (ms) to flash the comic title on selection; 0 = off
+title_flash=1500

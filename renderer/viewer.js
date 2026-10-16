@@ -12,6 +12,7 @@
   var gridEl = document.getElementById("grid");
   var readerEl = document.getElementById("reader");
   var posEl = document.getElementById("pos");
+var flashEl = document.getElementById("flash");
   var slider = document.getElementById("size");
   var pct = document.getElementById("pct");
   var fsBtn = document.getElementById("fs");
@@ -44,6 +45,8 @@ var metaCancelBtn = document.getElementById("metaCancel");
   var heldN = false, heldU = false, galleryRaf = 0;
   var posRaf = 0;
   var browsePosRaf = 0;
+  var flashMs = 1500;
+  var flashTimer = 0;
   var near = false, sliding = false;
   var current = 0;
   var focus = false;
@@ -199,11 +202,20 @@ var metaCancelBtn = document.getElementById("metaCancel");
     });
   }
 
+  function flashTitle(title) {
+    if (flashMs <= 0) return;
+    flashEl.textContent = title || "";
+    flashEl.classList.add("show");
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(function () { flashEl.classList.remove("show"); }, flashMs);
+  }
+
   function select(i, force) {
     if (i < 0 || i >= visible.length) return;
     if (sel === i && !force) return;
     sel = i;
     cur = visible[sel];
+    flashTitle(cur.title);
     var rows = listEl.children;
     for (var k = 0; k < rows.length; k++) rows[k].classList.toggle("sel", k === sel);
     if (rows[sel]) rows[sel].scrollIntoView({ block: "center" });
@@ -791,6 +803,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
       if (opts.error) { posEl.textContent = opts.error; return; }
       AUTO_READ = !!opts.autoRead;
       lastRead = opts.state || {};
+      if (typeof opts.titleFlash === "number") flashMs = opts.titleFlash;
       if (AUTO_READ && COMICS.length === 1) {
         visible = COMICS;
         sel = 0;
