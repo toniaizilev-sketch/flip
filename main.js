@@ -225,6 +225,7 @@ app.whenReady().then(() => {
       await setXattr(meta.dir, "user.zine.title", meta.title);
       await setXattr(meta.dir, "user.zine.author", meta.author);
       await setXattr(meta.dir, "user.xdg.tags", (meta.tags || []).join(","));
+      await setXattr(meta.dir, "user.zine.status", "manual");
     } catch (e) {
       console.error("flip:saveMeta:", e && e.message);
     }
