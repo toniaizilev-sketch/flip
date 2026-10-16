@@ -1,6 +1,6 @@
 pkgname=flip
 pkgver=0.1.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Comic and image viewer"
 arch=('any')
 depends=('electron')

@@ -62,6 +62,9 @@ html, body {
   pointer-events: none; user-select: none; max-width: 70vw;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+body.read #pos {
+  top: auto; bottom: 12px; left: 12px; transform: none;
+}
 #dock {
   position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%);
   display: flex; align-items: center; gap: 3px; padding: 5px;
@@ -119,7 +122,7 @@ body.focus { overflow: hidden; }
   user-select: none;
 }
 #focusCaption {
-  position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
+  position: absolute; left: 12px; bottom: 12px;
   padding: 6px 10px; border-radius: 8px;
   background: rgba(0,0,0,.6);
   font: 13px/1 system-ui, sans-serif; color: #eee;

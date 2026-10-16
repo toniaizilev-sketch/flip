@@ -38,6 +38,8 @@
   var focus = false;
   var lastRead = {};
   var wheelAdvancePending = false;
+  var gPending = false, gTimer = 0;
+  var overscroll = 0;
 
   function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
 
@@ -171,6 +173,7 @@
       startIndex = (typeof remembered === "number" && remembered >= 0 && remembered < c.imgs.length) ? remembered : 0;
     }
     mode = "read";
+    document.body.classList.add("read");
     browseEl.style.display = "none";
     readerEl.style.display = "block";
     renderReader(startIndex);
@@ -215,7 +218,7 @@
     else go();
   }
 
-  function gotoComic(delta) {
+  function gotoComic(delta, toEnd) {
     if (mode !== "read") return false;
     var target = sel + delta;
     if (target < 0 || target >= visible.length) return false;
@@ -225,7 +228,7 @@
     var rows = listEl.children;
     for (var k = 0; k < rows.length; k++) rows[k].classList.toggle("sel", k === sel);
     if (rows[sel]) rows[sel].scrollIntoView({ block: "nearest" });
-    renderReader(0);
+    renderReader(toEnd ? cur.imgs.length - 1 : 0);
     updateDock();
     scheduleReaderPos();
     return true;
@@ -235,6 +238,7 @@
     lastRead[cur.dir] = current;
     saveLastRead();
     mode = "browse";
+    document.body.classList.remove("read");
     readerEl.style.display = "none";
     browseEl.style.display = "flex";
     updateDock();
@@ -254,6 +258,10 @@
       if (t) t.scrollIntoView({ block: "center" });
     }
   }
+
+  function scrollGridTop() { rightEl.scrollTop = 0; }
+  function scrollGridBottom() { rightEl.scrollTop = rightEl.scrollHeight; }
+  function pageDown() { readerEl.scrollTop += readerEl.clientHeight; }
 
   function readerPos() {
     posRaf = 0;
@@ -305,6 +313,10 @@
   function atBottom() {
     return readerEl.scrollHeight > readerEl.clientHeight + 4
       && readerEl.scrollTop + readerEl.clientHeight >= readerEl.scrollHeight - 4;
+  }
+
+  function atTop() {
+    return readerEl.scrollTop <= 0;
   }
 
   function fullscreenActive() {
@@ -448,13 +460,19 @@
   }, { passive: false, capture: true });
 
   readerEl.addEventListener("wheel", function (event) {
-    if (event.ctrlKey || event.deltaY <= 0) return;
-    if (wheelAdvancePending) return;
-    wheelAdvancePending = true;
-    requestAnimationFrame(function () {
-      wheelAdvancePending = false;
-      if (atBottom()) gotoComic(1);
-    });
+    if (event.ctrlKey) return;
+    var dy = event.deltaY;
+    if (event.deltaMode === 1) dy *= 16;
+    else if (event.deltaMode === 2) dy *= window.innerHeight;
+    if (dy > 0 && atBottom()) {
+      overscroll += dy;
+      if (overscroll >= 200) { overscroll = 0; gotoComic(1); }
+    } else if (dy < 0 && atTop()) {
+      overscroll -= dy;
+      if (overscroll >= 200) { overscroll = 0; gotoComic(-1, true); }
+    } else {
+      overscroll = 0;
+    }
   }, { passive: true });
 
   readerEl.addEventListener("scroll", scheduleReaderPos, { passive: true });
@@ -462,14 +480,7 @@
 
   readerEl.addEventListener("click", function (event) {
     if (event.button !== 0) return;
-    var imgs = readerEl.querySelectorAll("img");
-    var st = readerEl.scrollTop;
-    for (var i = 0; i < imgs.length; i++) {
-      if (imgs[i].offsetTop > st + 1) {
-        readerEl.scrollTo(0, imgs[i].offsetTop);
-        return;
-      }
-    }
+    pageDown();
   });
 
   gridEl.addEventListener("dblclick", function (event) {
@@ -529,6 +540,7 @@
       else if (event.key === "1") { event.preventDefault(); setRW(100); updateDock(); }
       else if (event.key === "2") { event.preventDefault(); setRW(80); updateDock(); }
       else if (event.key === "3") { event.preventDefault(); setRW(50); updateDock(); }
+      else if (event.key === " ") { event.preventDefault(); pageDown(); }
       else if (event.key === "ArrowRight" || event.key === "n" || event.key === "N") { event.preventDefault(); gotoComic(1); }
       else if (event.key === "ArrowLeft" || event.key === "p" || event.key === "P") { event.preventDefault(); gotoComic(-1); }
       else if (event.key === "m" || event.key === "M") { event.preventDefault(); enterFocus(); }
@@ -546,12 +558,19 @@
       return;
     }
 
+    if (gPending) {
+      gPending = false;
+      clearTimeout(gTimer);
+      if (event.key === "g") { event.preventDefault(); scrollGridTop(); return; }
+      if (event.key === "l") { event.preventDefault(); highlightLastRead(); return; }
+    }
+
     if (event.key === "j" || event.key === "ArrowDown") { event.preventDefault(); select(sel + 1); }
     else if (event.key === "k" || event.key === "ArrowUp") { event.preventDefault(); select(sel - 1); }
     else if (event.key === "n" || event.key === "N") { event.preventDefault(); heldN = true; if (!galleryRaf) galleryRaf = requestAnimationFrame(galleryTick); }
     else if (event.key === "u" || event.key === "U") { event.preventDefault(); heldU = true; if (!galleryRaf) galleryRaf = requestAnimationFrame(galleryTick); }
-    else if (event.key === "g") { event.preventDefault(); select(0); }
-    else if (event.key === "G") { event.preventDefault(); select(visible.length - 1); }
+    else if (event.key === "g") { event.preventDefault(); gPending = true; gTimer = setTimeout(function () { gPending = false; }, 800); }
+    else if (event.key === "G") { event.preventDefault(); scrollGridBottom(); }
     else if (event.key === "/") { event.preventDefault(); searchEl.focus(); }
     else if (event.key === "Enter") { event.preventDefault(); openReader(); }
     else if (event.key === "h" || event.key === "H" || event.key === "?") { event.preventDefault(); toggleHelp(); }
