@@ -210,6 +210,13 @@ var metaCancelBtn = document.getElementById("metaCancel");
     flashTimer = setTimeout(function () { flashEl.classList.remove("show"); }, flashMs);
   }
 
+  function clearLastRead() {
+    if (!cur || !cur.dir) return;
+    delete lastRead[cur.dir];
+    saveLastRead();
+    highlightLastRead();
+  }
+
   function select(i, force) {
     if (i < 0 || i >= visible.length) return;
     if (sel === i && !force) return;
@@ -770,6 +777,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     else if (event.key === "s") { event.preventDefault(); cycleSort(); }
     else if (event.key === "S") { event.preventDefault(); toggleSortDir(); }
     else if (event.key === "e") { event.preventDefault(); if (cur) openMeta(cur); }
+    else if (event.key === "x") { event.preventDefault(); clearLastRead(); }
     else if (event.key === "Enter") { event.preventDefault(); openReader(); }
     else if (event.key === "h" || event.key === "H" || event.key === "?") { event.preventDefault(); toggleHelp(); }
     else if (event.key === "q" || event.key === "Q") { event.preventDefault(); window.close(); }
