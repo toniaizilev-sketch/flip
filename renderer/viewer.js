@@ -677,11 +677,6 @@ var metaCancelBtn = document.getElementById("metaCancel");
       if (event.key === "Escape") { event.preventDefault(); closeMeta(); }
       return;
     }
-    if (event.ctrlKey && event.key === " ") {
-      event.preventDefault();
-      if (cur) openMeta(cur);
-      return;
-    }
     if (focus) {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -762,6 +757,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     else if (event.key === "/") { event.preventDefault(); searchEl.focus(); }
     else if (event.key === "s") { event.preventDefault(); cycleSort(); }
     else if (event.key === "S") { event.preventDefault(); toggleSortDir(); }
+    else if (event.key === "e") { event.preventDefault(); if (cur) openMeta(cur); }
     else if (event.key === "Enter") { event.preventDefault(); openReader(); }
     else if (event.key === "h" || event.key === "H" || event.key === "?") { event.preventDefault(); toggleHelp(); }
     else if (event.key === "q" || event.key === "Q") { event.preventDefault(); window.close(); }
