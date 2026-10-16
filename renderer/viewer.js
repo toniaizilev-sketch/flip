@@ -28,7 +28,10 @@
 var metaEl = document.getElementById("meta");
 var metaTitleEl = document.getElementById("metaTitle");
 var metaAuthorEl = document.getElementById("metaAuthor");
-var metaTagsEl = document.getElementById("metaTags");
+var metaChipsEl = document.getElementById("metaChips");
+var metaTagInputEl = document.getElementById("metaTagInput");
+var metaAuthorListEl = document.getElementById("metaAuthorList");
+var metaTagListEl = document.getElementById("metaTagList");
 var metaSaveBtn = document.getElementById("metaSave");
 var metaCancelBtn = document.getElementById("metaCancel");
 
@@ -48,6 +51,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
   var overscroll = 0;
   var sortMode = "natural";
   var metaComic = null;
+  var metaTags = [];
 
   function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
 
@@ -204,11 +208,58 @@ var metaCancelBtn = document.getElementById("metaCancel");
     highlightLastRead();
   }
 
+  function normalizeTag(raw) {
+    return String(raw || "").toLowerCase().replace(/\+/g, " ").replace(/%20/gi, " ").replace(/\s+/g, " ").trim();
+  }
+
+  function renderMetaChips() {
+    metaChipsEl.textContent = "";
+    metaTags.forEach(function (tag, i) {
+      var chip = document.createElement("span");
+      chip.className = "meta-chip";
+      var label = document.createElement("span");
+      label.textContent = tag;
+      var x = document.createElement("button");
+      x.type = "button";
+      x.textContent = "×";
+      x.title = "Remove " + tag;
+      x.addEventListener("click", function () { metaTags.splice(i, 1); renderMetaChips(); });
+      chip.appendChild(label);
+      chip.appendChild(x);
+      metaChipsEl.appendChild(chip);
+    });
+  }
+
+  function addMetaTag(raw) {
+    var norm = normalizeTag(raw);
+    if (!norm || metaTags.indexOf(norm) !== -1) return;
+    metaTags.push(norm);
+    renderMetaChips();
+  }
+
+  function fillMetaSuggestions() {
+    var authors = {}, tags = {};
+    COMICS.forEach(function (c) {
+      if (c.author) authors[c.author] = true;
+      (c.tags || []).forEach(function (t) { if (t) tags[t] = true; });
+    });
+    metaAuthorListEl.textContent = "";
+    Object.keys(authors).sort().forEach(function (a) {
+      var o = document.createElement("option"); o.value = a; metaAuthorListEl.appendChild(o);
+    });
+    metaTagListEl.textContent = "";
+    Object.keys(tags).sort().forEach(function (t) {
+      var o = document.createElement("option"); o.value = t; metaTagListEl.appendChild(o);
+    });
+  }
+
   function openMeta(c) {
     metaComic = c;
     metaTitleEl.value = c.title || "";
     metaAuthorEl.value = c.author || "";
-    metaTagsEl.value = (c.tags || []).join(", ");
+    metaTags = (c.tags || []).slice();
+    renderMetaChips();
+    fillMetaSuggestions();
     metaEl.classList.add("show");
     metaTitleEl.focus();
   }
@@ -222,7 +273,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     if (!metaComic) return;
     var title = metaTitleEl.value.trim();
     var author = metaAuthorEl.value.trim();
-    var tags = metaTagsEl.value.split(",").map(function (t) { return t.trim(); }).filter(Boolean);
+    var tags = metaTags.slice();
     var base = metaComic.dir.split("/").pop();
     metaComic.title = title || base;
     metaComic.author = author;
@@ -507,6 +558,17 @@ var metaCancelBtn = document.getElementById("metaCancel");
   document.getElementById("helpClose").addEventListener("click", function () { showHelp(false); });
   metaSaveBtn.addEventListener("click", saveMeta);
   metaCancelBtn.addEventListener("click", closeMeta);
+  metaTitleEl.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); saveMeta(); } });
+  metaAuthorEl.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); saveMeta(); } });
+  metaTagInputEl.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addMetaTag(metaTagInputEl.value);
+      metaTagInputEl.value = "";
+    } else if (e.key === "Backspace" && metaTagInputEl.value === "") {
+      if (metaTags.length) { metaTags.pop(); renderMetaChips(); }
+    }
+  });
   focusEl.addEventListener("click", function () { focusNav(1); });
   document.addEventListener("fullscreenchange", updateFs);
   document.addEventListener("webkitfullscreenchange", updateFs);
@@ -570,7 +632,6 @@ var metaCancelBtn = document.getElementById("metaCancel");
   document.addEventListener("keydown", function (event) {
     if (metaEl.classList.contains("show")) {
       if (event.key === "Escape") { event.preventDefault(); closeMeta(); }
-      else if (event.key === "Enter") { event.preventDefault(); saveMeta(); }
       return;
     }
     if (focus) {

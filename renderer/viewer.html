@@ -62,8 +62,12 @@
 <div id="meta">
   <h2>Edit metadata</h2>
   <label>Title<input id="metaTitle" type="text"></label>
-  <label>Author<input id="metaAuthor" type="text"></label>
-  <label>Tags (comma separated)<input id="metaTags" type="text"></label>
+  <label>Author<input id="metaAuthor" type="text" list="metaAuthorList"></label>
+  <datalist id="metaAuthorList"></datalist>
+  <div class="metaField">Tags</div>
+  <div id="metaChips"></div>
+  <input id="metaTagInput" type="text" list="metaTagList" placeholder="type + Enter to add">
+  <datalist id="metaTagList"></datalist>
   <div class="metaBtns">
     <button type="button" id="metaCancel">Cancel</button>
     <button type="button" id="metaSave" class="primary">Save</button>
