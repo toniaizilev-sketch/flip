@@ -55,7 +55,7 @@ html, body {
 #reader img { display: block; width: calc(var(--rw) * 1vw); height: auto; margin: 0 auto 8px; }
 #reader img.pending { min-height: 70vh; background: #1a1a1a; }
 #pos {
-  position: fixed; top: 12px; left: 50%; transform: translateX(-50%); padding: 6px 9px; border-radius: 8px;
+  position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); padding: 6px 9px; border-radius: 8px;
   background: rgba(0,0,0,.52); backdrop-filter: blur(4px);
   font: 13px/1 system-ui, sans-serif; color: #eee;
   font-variant-numeric: tabular-nums; z-index: 2147483640;
@@ -63,7 +63,7 @@ html, body {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 body.read #pos {
-  top: auto; bottom: 12px; left: 12px; transform: none;
+  left: 12px; transform: none;
 }
 #flash {
   position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
