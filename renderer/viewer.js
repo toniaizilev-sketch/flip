@@ -158,6 +158,7 @@
       gridEl.appendChild(thumb);
     });
     observeGrid();
+    highlightLastRead();
   }
 
   // ---- read ----
