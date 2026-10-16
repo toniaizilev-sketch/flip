@@ -125,7 +125,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     var modes = ["natural", "title", "author", "date"];
     sortMode = modes[(modes.indexOf(sortMode) + 1) % modes.length];
     sortComics();
-    applyFilter(cur ? cur.dir : null);
+    applyFilter();
   }
 
   function applyFilter(preserveDir) {
@@ -570,6 +570,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
   document.addEventListener("keydown", function (event) {
     if (metaEl.classList.contains("show")) {
       if (event.key === "Escape") { event.preventDefault(); closeMeta(); }
+      else if (event.key === "Enter") { event.preventDefault(); saveMeta(); }
       return;
     }
     if (focus) {
