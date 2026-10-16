@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Flip
+GenericName=Comic & Image Viewer
+Comment=Browse and read comics and images
+Exec=flip
+Icon=flip
+Terminal=false
+Categories=Graphics;Viewer;
+Keywords=comic;manga;image;viewer;reader;

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- speech bubble -->
+  <path d="M44 16 H84 A20 20 0 0 1 104 36 V64 A20 20 0 0 1 84 84 H50 L34 100 L58 84 H44 A20 20 0 0 1 24 64 V36 A20 20 0 0 1 44 16 Z"
+        fill="#FFD54F" stroke="#4E342E" stroke-width="5" stroke-linejoin="round"/>
+  <!-- eyes -->
+  <circle cx="56" cy="47" r="6" fill="#4E342E"/>
+  <circle cx="72" cy="47" r="6" fill="#4E342E"/>
+  <!-- eye highlights -->
+  <circle cx="58" cy="45" r="2" fill="#FFFFFF"/>
+  <circle cx="74" cy="45" r="2" fill="#FFFFFF"/>
+  <!-- smile -->
+  <path d="M55 60 Q64 69 73 60" fill="none" stroke="#4E342E" stroke-width="4" stroke-linecap="round"/>
+  <!-- blush -->
+  <circle cx="45" cy="56" r="4.5" fill="#FF8A80" opacity="0.85"/>
+  <circle cx="83" cy="56" r="4.5" fill="#FF8A80" opacity="0.85"/>
+</svg>

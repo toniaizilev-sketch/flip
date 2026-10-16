@@ -20,12 +20,15 @@ function parseArgs(argv, defaultRoot) {
   let root = defaultRoot;
   let single = false;
   let read = false;
+  // Only parse args after the "--" separator: everything before it (electron
+  // binary, injected Chromium flags, app path) is not ours.
+  const sep = argv.indexOf("--");
+  if (sep !== -1) argv = argv.slice(sep + 1);
   for (const a of argv) {
-    if (a === "--") continue; // Electron app-arg separator
     if (a === "-s" || a === "--single") single = true;
     else if (a === "-r" || a === "--read") { single = true; read = true; }
     else if (a === "-h" || a === "--help") return { help: true };
-    else if (a.startsWith("-")) return { bad: a };
+    else if (a.startsWith("-")) continue; // ignore unknown flags
     else root = a;
   }
   return { root, single, read };
@@ -39,9 +42,9 @@ function expandTilde(p) {
 
 function readConfig() {
   const cfg = { root: "", windowSize: "" };
-  const xdg = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config");
+  const file = process.env.FLIP_CONFIG || path.join(os.homedir(), ".config", "flip", "config");
   let text = "";
-  try { text = fs.readFileSync(path.join(xdg, "flip", "config"), "utf8"); } catch { return cfg; }
+  try { text = fs.readFileSync(file, "utf8"); } catch { return cfg; }
   for (const line of text.split("\n")) {
     const idx = line.indexOf("=");
     if (idx < 0) continue;
@@ -140,13 +143,8 @@ app.whenReady().then(() => {
     app.quit();
     return;
   }
-  if (args.bad) {
-    console.error("unknown option: " + args.bad);
-    app.quit();
-    return;
-  }
   if (!args.root) {
-    console.error("no directory specified (pass DIR or set root in ~/.config/flip/config)");
+    console.error("no root configured — edit ~/.config/flip/config and set root to your comics directory");
     app.quit();
     return;
   }
@@ -154,7 +152,7 @@ app.whenReady().then(() => {
   let st = null;
   try { st = fs.statSync(args.root); } catch { /* missing */ }
   if (!st || !st.isDirectory()) {
-    console.error("not a directory: " + args.root);
+    console.error("not a directory: " + args.root + "\nSet a valid root in ~/.config/flip/config");
     app.quit();
     return;
   }

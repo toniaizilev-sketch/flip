@@ -1,0 +1,5 @@
+# flip user configuration
+# Copy this file to ~/.config/flip/config, then replace the placeholder paths.
+# flip will refuse to start until root points to a real directory.
+root=~/path/to/your/comics
+window_size=1280,840
