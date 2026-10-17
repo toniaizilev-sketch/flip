@@ -585,7 +585,8 @@ var metaCancelBtn = document.getElementById("metaCancel");
       var dur = getDuration(words);
       var learned = getLearnedDuration(words);
       info += " · " + words + " words · " + dur.toFixed(1) + "s";
-      if (learned !== null) info += " (learned)";
+      if (learned !== null) info += " (learned from your pace)";
+      else info += " (default)";
     }
     focusCaption.textContent = info;
 
@@ -756,15 +757,15 @@ var metaCancelBtn = document.getElementById("metaCancel");
   function getLearnedDuration(words) {
     var bucket = getWordBucket(words);
     var data = learnedData[bucket];
-    if (!data || !data.views || data.views < 4) return null; // need more data
+    if (!data || !data.views || data.views < 2) return null; // learn faster (after 2 samples)
 
     var avgTime = data.totalTime / data.views;
     var skipRate = (data.quickSkips || 0) / data.views;
     var revisitRate = (data.revisits || 0) / data.views;
 
-    // Low-text artwork pages: stronger bonus for going back, weaker penalty for quick skip
-    var skipWeight = (words < 12) ? 0.3 : 0.7;
-    var revisitWeight = (words < 12) ? 1.5 : 0.9;
+    // Strong reaction to your actions, especially on low-text artwork
+    var skipWeight = (words < 12) ? 0.4 : 0.8;
+    var revisitWeight = (words < 12) ? 2.0 : 1.0; // back button = strong "needs more time" signal
 
     var adjustment = 1.0 - (skipRate * skipWeight) + (revisitRate * revisitWeight);
     return clamp(avgTime * adjustment, 5.0, SLIDESHOW_MAX);
