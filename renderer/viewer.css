@@ -81,6 +81,15 @@ body.read #pos {
   text-shadow: 0 2px 4px rgba(0, 0, 0, .95), 0 0 30px rgba(0, 0, 0, .7);
 }
 #flash.show { opacity: 1; }
+#jump {
+  position: fixed; left: 50%; bottom: 60px; transform: translateX(-50%);
+  width: 200px; padding: 10px 14px;
+  border-radius: 8px; border: 1px solid #444;
+  background: #1c1c1c; color: #eee; font: 15px/1 system-ui, sans-serif;
+  text-align: center; outline: none; user-select: text;
+  z-index: 2147483644; display: none;
+}
+#jump.show { display: block; }
 #dock {
   position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%);
   display: flex; align-items: center; gap: 3px; padding: 5px;

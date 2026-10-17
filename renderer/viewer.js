@@ -13,6 +13,7 @@
   var readerEl = document.getElementById("reader");
   var posEl = document.getElementById("pos");
 var flashEl = document.getElementById("flash");
+var jumpEl = document.getElementById("jump");
   var slider = document.getElementById("size");
   var pct = document.getElementById("pct");
   var fsBtn = document.getElementById("fs");
@@ -589,6 +590,35 @@ var metaCancelBtn = document.getElementById("metaCancel");
     focusUpdate();
   }
 
+  function showJump() {
+    jumpEl.value = "";
+    jumpEl.classList.add("show");
+    jumpEl.focus();
+  }
+
+  function hideJump() {
+    jumpEl.classList.remove("show");
+  }
+
+  function jumpToPage(n) {
+    if (!cur || !cur.imgs.length) return;
+    var idx = clamp(n - 1, 0, cur.imgs.length - 1);
+    if (focus) {
+      current = idx;
+      focusUpdate();
+    } else {
+      current = idx;
+      scrollToImage(idx);
+    }
+  }
+
+  function commitJump() {
+    var n = parseInt(jumpEl.value.trim(), 10);
+    hideJump();
+    if (isNaN(n) || n < 1) return;
+    jumpToPage(n);
+  }
+
   // ---- dock & size ----
 
   function setTW(v) {
@@ -641,6 +671,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
   document.getElementById("helpClose").addEventListener("click", function () { showHelp(false); });
   metaSaveBtn.addEventListener("click", saveMeta);
   metaCancelBtn.addEventListener("click", closeMeta);
+  jumpEl.addEventListener("blur", function () { jumpEl.classList.remove("show"); });
   metaTitleEl.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); saveMeta(); } });
   metaAuthorEl.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); saveMeta(); } });
   metaUrlEl.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); saveMeta(); } });
@@ -721,6 +752,11 @@ var metaCancelBtn = document.getElementById("metaCancel");
       if (event.key === "Escape") { event.preventDefault(); closeMeta(); }
       return;
     }
+    if (jumpEl.classList.contains("show")) {
+      if (event.key === "Enter") { event.preventDefault(); commitJump(); }
+      else if (event.key === "Escape") { event.preventDefault(); hideJump(); }
+      return;
+    }
     if (focus) {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -736,6 +772,8 @@ var metaCancelBtn = document.getElementById("metaCancel");
         event.preventDefault(); exitFocus(); backToBrowse();
       } else if (event.key === "f" || event.key === "F") {
         event.preventDefault(); toggleFullscreen();
+      } else if (event.key === ":") {
+        event.preventDefault(); showJump();
       } else if (event.key === "h" || event.key === "H" || event.key === "?") {
         event.preventDefault(); toggleHelp();
       } else if (event.key === "q" || event.key === "Q") {
@@ -772,6 +810,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
       else if (event.key === "ArrowLeft" || event.key === "p" || event.key === "P") { event.preventDefault(); gotoComic(-1); }
       else if (event.key === "m" || event.key === "M") { event.preventDefault(); enterFocus(); }
       else if (event.key === "f" || event.key === "F") { event.preventDefault(); toggleFullscreen(); }
+      else if (event.key === ":") { event.preventDefault(); showJump(); }
       else if (event.key === "h" || event.key === "H" || event.key === "?") { event.preventDefault(); toggleHelp(); }
       else if (event.key === "q" || event.key === "Q" || event.key === "Backspace") { event.preventDefault(); backToBrowse(); }
       else if (event.key === "Escape") {
