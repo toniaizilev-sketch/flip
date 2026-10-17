@@ -1044,6 +1044,12 @@ var metaCancelBtn = document.getElementById("metaCancel");
       else if (event.key === "ArrowRight" || event.key === "n" || event.key === "N") { event.preventDefault(); gotoComic(1); }
       else if (event.key === "ArrowLeft" || event.key === "p" || event.key === "P") { event.preventDefault(); gotoComic(-1); }
       else if (event.key === "m" || event.key === "M") { event.preventDefault(); enterFocus(); }
+      else if (event.key === "s" || event.key === "S") {
+        event.preventDefault();
+        readerPos(); // update current to visible image
+        enterFocus();
+        startSlideshow();
+      }
       else if (event.key === "f" || event.key === "F") { event.preventDefault(); toggleFullscreen(); }
       else if (event.key === ":") { event.preventDefault(); showJump(); }
       else if (event.key === "h" || event.key === "H" || event.key === "?") { event.preventDefault(); toggleHelp(); }
