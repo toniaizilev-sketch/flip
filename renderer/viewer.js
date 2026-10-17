@@ -595,11 +595,11 @@ var metaCancelBtn = document.getElementById("metaCancel");
     focus = true;
     document.body.classList.add("focus");
     focusEl.classList.add("show");
-    if (wpmControl && SLIDESHOW) wpmControl.classList.remove("hidden");
     focusUpdate();
     if (SLIDESHOW && typeof wordCounts[current] === "undefined") {
       prefetchWordCount(current);
     }
+    showWpmControl();
   }
 
   function exitFocus() {
@@ -608,7 +608,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     focus = false;
     focusEl.classList.remove("show");
     document.body.classList.remove("focus");
-    if (wpmControl) wpmControl.classList.add("hidden");
+    showWpmControl();
     var imgs = readerEl.querySelectorAll("img");
     var target = imgs[current];
     if (target) readerEl.scrollTo(0, target.offsetTop);
@@ -682,7 +682,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
   function startSlideshow() {
     if (!focus || !cur) return;
     slideshowActive = true;
-    if (wpmControl) wpmControl.classList.remove("hidden");
+    showWpmControl();
     scheduleNextSlide();
   }
 
@@ -692,6 +692,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
       slideshowTimer = 0;
     }
     slideshowActive = false;
+    showWpmControl();
   }
 
   function scheduleNextSlide() {
@@ -747,6 +748,13 @@ var metaCancelBtn = document.getElementById("metaCancel");
 
   function showDock() { dock.classList.toggle("show", near || sliding); }
 
+  function showWpmControl() {
+    if (wpmControl) {
+      var shouldShow = focus && (near || sliding || slideshowActive);
+      wpmControl.classList.toggle("show", shouldShow);
+    }
+  }
+
   // ---- events ----
 
   searchEl.addEventListener("input", applyFilter);
@@ -791,13 +799,15 @@ var metaCancelBtn = document.getElementById("metaCancel");
       wpmValue.textContent = Math.round(wpm);
       if (slideshowActive) scheduleNextSlide();
     });
+    wpmSlider.addEventListener("pointerdown", function () { sliding = true; showWpmControl(); });
   }
 
   document.addEventListener("mousemove", function (event) {
     near = event.clientY >= window.innerHeight - EDGE;
     showDock();
+    showWpmControl();
   }, { passive: true });
-  document.addEventListener("mouseleave", function () { near = false; showDock(); });
+  document.addEventListener("mouseleave", function () { near = false; showDock(); showWpmControl(); });
 
   window.addEventListener("wheel", function (event) {
     if (focus || !event.ctrlKey) return;
@@ -988,6 +998,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     wpmValue.textContent = Math.round(wpm);
   }
   updateDock();
+  showWpmControl();
   posEl.textContent = "loading…";
 
   if (window.flip) {

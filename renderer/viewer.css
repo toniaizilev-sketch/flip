@@ -202,12 +202,19 @@ body.focus { overflow: hidden; }
   border-radius: 8px;
   font: 13px/1.4 system-ui, sans-serif;
   color: #ddd;
-  pointer-events: auto;
+  pointer-events: none;
   user-select: none;
   z-index: 10;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+
+.wpm-control.show {
+  pointer-events: auto;
+  opacity: 1;
 }
 
 .wpm-control label {
@@ -228,5 +235,3 @@ body.focus { overflow: hidden; }
   margin-top: 4px;
   opacity: 0.8;
 }
-
-.wpm-control.hidden { display: none !important; }
