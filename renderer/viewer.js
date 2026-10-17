@@ -76,10 +76,11 @@ var metaCancelBtn = document.getElementById("metaCancel");
   var slideshowActive = false;
   var wordCounts = {}; // pageIndex -> word count for current comic
 
-  // adaptive learning from manual clicking speed
+  // adaptive learning v2: tracks quick skips, revisits, and time spent
   var learningEnabled = true;
-  var learnedData = {}; // bucket -> {count: number, totalSeconds: number}
+  var learnedData = {}; // bucket -> {views, totalTime, quickSkips, revisits}
   var lastPageStartTime = 0;
+  var lastNavDirection = 0;
 
   function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
 
@@ -582,7 +583,9 @@ var metaCancelBtn = document.getElementById("metaCancel");
     var words = wordCounts[current] || 0;
     if (words > 0 || SLIDESHOW) {
       var dur = getDuration(words);
+      var learned = getLearnedDuration(words);
       info += " · " + words + " words · " + dur.toFixed(1) + "s";
+      if (learned !== null) info += " (learned)";
     }
     focusCaption.textContent = info;
 
@@ -637,7 +640,8 @@ var metaCancelBtn = document.getElementById("metaCancel");
     if (!slideshowActive && lastPageStartTime > 0) {
       var timeSpent = (Date.now() - lastPageStartTime) / 1000;
       var prevWords = wordCounts[current - dir] || 0;
-      if (prevWords > 0) recordManualTime(prevWords, timeSpent);
+      var wasBack = (dir < 0);
+      if (prevWords > 0) recordManualTime(prevWords, timeSpent, wasBack);
     }
 
     focusUpdate();
@@ -727,7 +731,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     }
   }
 
-  // ---- adaptive learning from manual advance speed ----
+  // ---- adaptive learning v2: tracks actions (quick skips, revisits, time spent) ----
   function getWordBucket(words) {
     if (words <= 10) return "0-10";
     if (words <= 50) return "11-50";
@@ -735,20 +739,32 @@ var metaCancelBtn = document.getElementById("metaCancel");
     return "121+";
   }
 
-  function recordManualTime(words, seconds) {
+  function recordManualTime(words, seconds, wasBack) {
     if (!learningEnabled || !words) return;
     var bucket = getWordBucket(words);
-    if (!learnedData[bucket]) learnedData[bucket] = { count: 0, totalSeconds: 0 };
-    learnedData[bucket].count++;
-    learnedData[bucket].totalSeconds += seconds;
+    if (!learnedData[bucket]) {
+      learnedData[bucket] = { views: 0, totalTime: 0, quickSkips: 0, revisits: 0 };
+    }
+    var data = learnedData[bucket];
+    data.views++;
+    data.totalTime += seconds;
+    if (seconds < 2.0) data.quickSkips++;
+    if (wasBack) data.revisits++;
     saveLearnedData();
   }
 
   function getLearnedDuration(words) {
     var bucket = getWordBucket(words);
     var data = learnedData[bucket];
-    if (!data || data.count < 3) return null; // not enough data yet
-    return data.totalSeconds / data.count;
+    if (!data || data.views < 4) return null; // need more data
+
+    var avgTime = data.totalTime / data.views;
+    var skipRate = data.quickSkips / data.views;
+    var revisitRate = data.revisits / data.views;
+
+    // penalize for quick skipping, reward for revisiting
+    var adjustment = 1.0 - (skipRate * 0.6) + (revisitRate * 0.8);
+    return clamp(avgTime * adjustment, SLIDESHOW_MIN, SLIDESHOW_MAX);
   }
 
   function getDuration(words) {
