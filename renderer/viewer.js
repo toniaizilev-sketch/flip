@@ -756,11 +756,11 @@ var metaCancelBtn = document.getElementById("metaCancel");
   function getLearnedDuration(words) {
     var bucket = getWordBucket(words);
     var data = learnedData[bucket];
-    if (!data || data.views < 4) return null; // need more data
+    if (!data || !data.views || data.views < 4) return null; // need more data
 
     var avgTime = data.totalTime / data.views;
-    var skipRate = data.quickSkips / data.views;
-    var revisitRate = data.revisits / data.views;
+    var skipRate = (data.quickSkips || 0) / data.views;
+    var revisitRate = (data.revisits || 0) / data.views;
 
     // Low-text pages (art) get stronger revisit bonus, weaker skip penalty
     var skipWeight = (words < 9) ? 0.4 : 0.7;
@@ -792,8 +792,24 @@ var metaCancelBtn = document.getElementById("metaCancel");
   function loadLearnedData() {
     try {
       var saved = localStorage.getItem("flipSlideshowLearned");
-      if (saved) learnedData = JSON.parse(saved);
-    } catch (e) {}
+      if (saved) {
+        learnedData = JSON.parse(saved);
+      } else {
+        learnedData = {};
+      }
+      // ensure all buckets have correct shape
+      Object.keys(learnedData).forEach(function (k) {
+        var d = learnedData[k];
+        if (typeof d !== "object") learnedData[k] = {};
+        if (typeof d.views !== "number") d.views = 0;
+        if (typeof d.totalTime !== "number") d.totalTime = 0;
+        if (typeof d.quickSkips !== "number") d.quickSkips = 0;
+        if (typeof d.revisits !== "number") d.revisits = 0;
+      });
+    } catch (e) {
+      console.error("Failed to load learned data:", e);
+      learnedData = {};
+    }
   }
 
   function resetLearning() {
