@@ -747,7 +747,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     }
     var data = learnedData[bucket];
     data.views++;
-    data.totalTime += seconds;
+    data.totalTime += Math.max(1.0, seconds); // avoid negative or zero
     if (seconds < 2.0) data.quickSkips++;
     if (wasBack) data.revisits++;
     saveLearnedData();
@@ -762,8 +762,11 @@ var metaCancelBtn = document.getElementById("metaCancel");
     var skipRate = data.quickSkips / data.views;
     var revisitRate = data.revisits / data.views;
 
-    // penalize for quick skipping, reward for revisiting
-    var adjustment = 1.0 - (skipRate * 0.6) + (revisitRate * 0.8);
+    // Low-text pages (art) get stronger revisit bonus, weaker skip penalty
+    var skipWeight = (words < 9) ? 0.4 : 0.7;
+    var revisitWeight = (words < 9) ? 1.2 : 0.8;
+
+    var adjustment = 1.0 - (skipRate * skipWeight) + (revisitRate * revisitWeight);
     return clamp(avgTime * adjustment, SLIDESHOW_MIN, SLIDESHOW_MAX);
   }
 
@@ -772,8 +775,11 @@ var metaCancelBtn = document.getElementById("metaCancel");
     if (learned !== null) {
       return clamp(learned, SLIDESHOW_MIN, SLIDESHOW_MAX);
     }
-    if (words < 8) return 5.0;
-    var seconds = SLIDESHOW_BASE + (words / wpm) * 60;
+
+    // Base time prioritizes artwork enjoyment on low-text pages
+    if (words < 9) return 6.0;                    // very low text = enjoy art
+    if (words < 36) return 4.2;                   // light dialogue
+    var seconds = 3.0 + (words / wpm) * 60;      // heavier text = more reading time
     return clamp(seconds, SLIDESHOW_MIN, SLIDESHOW_MAX);
   }
 
