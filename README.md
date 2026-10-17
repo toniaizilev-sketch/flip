@@ -11,11 +11,18 @@ JSON-injected HTML file.
 
 ## Run
 
-    ./test.sh [-s|-r] <directory>
+    ./test.sh [-s|-r|--slideshow] <directory>
 
 - no flag → browse comics under `DIR` (gallery)
 - `-s` / `--single` → treat `DIR` as one comic (gallery)
 - `-r` / `--read` → treat `DIR` as one comic and open the reader directly
+- `--slideshow` → treat `DIR` as one comic, open reader + focus mode ("m"), and auto-start **text-based slideshow**. Duration is based on OCR word count per page (minimum ~5s for low/no-text pages so you can appreciate the artwork). Toggle with `s`, adjust speed with the WPM slider.
+
+Key behavior:
+- `s` in **gallery** on a comic → opens it in focus mode and starts slideshow from last-read page (or beginning)
+- `s` in **focus mode** (`m`) → toggles slideshow from current page
+- WPM slider controls reading speed
+- Caption shows current page, detected word count, and computed duration
 
 ## Layout
 

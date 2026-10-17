@@ -27,6 +27,9 @@ var jumpEl = document.getElementById("jump");
   var focusEl = document.getElementById("focus");
   var focusImg = document.getElementById("focusImg");
   var focusCaption = document.getElementById("focusCaption");
+  var wpmControl = document.getElementById("wpmControl");
+  var wpmSlider = document.getElementById("wpmSlider");
+  var wpmValue = document.getElementById("wpmValue");
 var metaEl = document.getElementById("meta");
 var metaTitleEl = document.getElementById("metaTitle");
 var metaAuthorEl = document.getElementById("metaAuthor");
@@ -63,6 +66,15 @@ var metaCancelBtn = document.getElementById("metaCancel");
   var metaTags = [];
   var metaAllTags = [];
   var metaAllAuthors = [];
+
+  // slideshow
+  var SLIDESHOW = false;
+  var wpm = 200;
+  var MIN_WPM = 60, MAX_WPM = 800;
+  var SLIDESHOW_BASE = 4.5, SLIDESHOW_MIN = 4.0, SLIDESHOW_MAX = 45;
+  var slideshowTimer = 0;
+  var slideshowActive = false;
+  var wordCounts = {}; // pageIndex -> word count for current comic
 
   function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
 
@@ -560,7 +572,19 @@ var metaCancelBtn = document.getElementById("metaCancel");
     var name = decodeURIComponent(url.split("/").pop());
     focusImg.src = url;
     focusImg.alt = name;
-    focusCaption.textContent = (current + 1) + " / " + cur.imgs.length + " — " + name;
+
+    var info = (current + 1) + " / " + cur.imgs.length + " — " + name;
+    var words = wordCounts[current] || 0;
+    if (words > 0 || SLIDESHOW) {
+      var dur = getDuration(words);
+      info += " · " + words + " words · " + dur.toFixed(1) + "s";
+    }
+    focusCaption.textContent = info;
+
+    // prefetch next
+    if (current + 1 < cur.imgs.length && !wordCounts[current + 1]) {
+      prefetchWordCount(current + 1);
+    }
   }
 
   function enterFocus() {
@@ -571,14 +595,20 @@ var metaCancelBtn = document.getElementById("metaCancel");
     focus = true;
     document.body.classList.add("focus");
     focusEl.classList.add("show");
+    if (wpmControl && SLIDESHOW) wpmControl.classList.remove("hidden");
     focusUpdate();
+    if (SLIDESHOW && typeof wordCounts[current] === "undefined") {
+      prefetchWordCount(current);
+    }
   }
 
   function exitFocus() {
     if (!focus) return;
+    stopSlideshow();
     focus = false;
     focusEl.classList.remove("show");
     document.body.classList.remove("focus");
+    if (wpmControl) wpmControl.classList.add("hidden");
     var imgs = readerEl.querySelectorAll("img");
     var target = imgs[current];
     if (target) readerEl.scrollTo(0, target.offsetTop);
@@ -596,6 +626,9 @@ var metaCancelBtn = document.getElementById("metaCancel");
       current += dir;
     }
     focusUpdate();
+    if (slideshowActive) {
+      scheduleNextSlide();
+    }
   }
 
   function showJump() {
@@ -625,6 +658,54 @@ var metaCancelBtn = document.getElementById("metaCancel");
     hideJump();
     if (isNaN(n) || n < 1) return;
     jumpToPage(n);
+  }
+
+  // ---- slideshow (text-based timing in focus mode) ----
+  function getDuration(words) {
+    if (words < 8) return 5.0;                    // minimum for artwork appreciation
+    var seconds = SLIDESHOW_BASE + (words / wpm) * 60;
+    return clamp(seconds, SLIDESHOW_MIN, SLIDESHOW_MAX);
+  }
+
+  async function prefetchWordCount(idx) {
+    if (!cur || !cur.dir || !cur.imgs[idx]) return;
+    var fullPath = fileURL(cur.dir, cur.imgs[idx]).replace(/^file:\/\//, "");
+    try {
+      var words = await window.flip.ocrWords(fullPath);
+      wordCounts[idx] = words;
+      if (idx === current) focusUpdate();
+    } catch (e) {
+      wordCounts[idx] = 0;
+    }
+  }
+
+  function startSlideshow() {
+    if (!focus || !cur) return;
+    slideshowActive = true;
+    if (wpmControl) wpmControl.classList.remove("hidden");
+    scheduleNextSlide();
+  }
+
+  function stopSlideshow() {
+    if (slideshowTimer) {
+      clearTimeout(slideshowTimer);
+      slideshowTimer = 0;
+    }
+    slideshowActive = false;
+  }
+
+  function scheduleNextSlide() {
+    if (slideshowTimer) clearTimeout(slideshowTimer);
+    var words = wordCounts[current] || 0;
+    var durMs = getDuration(words) * 1000;
+    slideshowTimer = setTimeout(advanceSlide, Math.max(800, durMs));
+  }
+
+  function advanceSlide() {
+    focusNav(1);
+    if (focus && slideshowActive) {
+      setTimeout(scheduleNextSlide, 150);
+    }
   }
 
   // ---- dock & size ----
@@ -703,6 +784,15 @@ var metaCancelBtn = document.getElementById("metaCancel");
   window.addEventListener("pointerup", function () { sliding = false; showDock(); });
   window.addEventListener("pointercancel", function () { sliding = false; showDock(); });
 
+  // wpm slider for slideshow
+  if (wpmSlider) {
+    wpmSlider.addEventListener("input", function () {
+      wpm = clamp(Number(this.value), MIN_WPM, MAX_WPM);
+      wpmValue.textContent = Math.round(wpm);
+      if (slideshowActive) scheduleNextSlide();
+    });
+  }
+
   document.addEventListener("mousemove", function (event) {
     near = event.clientY >= window.innerHeight - EDGE;
     showDock();
@@ -772,6 +862,13 @@ var metaCancelBtn = document.getElementById("metaCancel");
         else exitFocus();
       } else if (event.key === "m" || event.key === "M") {
         event.preventDefault(); exitFocus();
+      } else if (event.key === "s" || event.key === "S") {
+        event.preventDefault();
+        if (slideshowActive) {
+          stopSlideshow();
+        } else {
+          startSlideshow();
+        }
       } else if (event.key === "j" || event.key === "J" || event.key === "ArrowRight" || event.key === "ArrowDown" || event.key === " ") {
         event.preventDefault(); focusNav(1);
       } else if (event.key === "k" || event.key === "K" || event.key === "ArrowLeft" || event.key === "ArrowUp") {
@@ -846,7 +943,20 @@ var metaCancelBtn = document.getElementById("metaCancel");
     else if (event.key === "g") { event.preventDefault(); gPending = true; gTimer = setTimeout(function () { gPending = false; }, 800); }
     else if (event.key === "G") { event.preventDefault(); scrollGridBottom(); }
     else if (event.key === "/") { event.preventDefault(); searchEl.focus(); }
-    else if (event.key === "s") { event.preventDefault(); cycleSort(); }
+    else if (event.key === "s") {
+      event.preventDefault();
+      if (cur) {
+        // Start slideshow from last read position (or beginning)
+        var startIdx = (typeof lastRead[cur.dir] === "number") ? lastRead[cur.dir] : 0;
+        openReader(startIdx);
+        setTimeout(() => {
+          enterFocus();
+          startSlideshow();
+        }, 100);
+      } else {
+        cycleSort();
+      }
+    }
     else if (event.key === "S") { event.preventDefault(); toggleSortDir(); }
     else if (event.key === "e") { event.preventDefault(); if (cur) openMeta(cur); }
     else if (event.key === "x") { event.preventDefault(); clearLastRead(); }
@@ -873,6 +983,10 @@ var metaCancelBtn = document.getElementById("metaCancel");
 
   setTW(RESET_T);
   setRW(RESET_W);
+  if (wpmSlider) {
+    wpmSlider.value = wpm;
+    wpmValue.textContent = Math.round(wpm);
+  }
   updateDock();
   posEl.textContent = "loading…";
 
@@ -884,6 +998,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     window.flip.onDone(function (opts) {
       if (opts.error) { posEl.textContent = opts.error; return; }
       AUTO_READ = !!opts.autoRead;
+      SLIDESHOW = !!opts.slideshow;
       lastRead = opts.state || {};
       if (typeof opts.titleFlash === "number") flashMs = opts.titleFlash;
       if (AUTO_READ && COMICS.length === 1) {
@@ -892,6 +1007,12 @@ var metaCancelBtn = document.getElementById("metaCancel");
         renderList();
         showComic();
         openReader(0);
+        if (SLIDESHOW) {
+          setTimeout(() => {
+            enterFocus();
+            startSlideshow();
+          }, 800);
+        }
       } else {
         applyFilter();
       }

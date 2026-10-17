@@ -20,6 +20,7 @@ function parseArgs(argv, defaultRoot) {
   let root = defaultRoot;
   let single = false;
   let read = false;
+  let slideshow = false;
   // Only parse args after the "--" separator: everything before it (electron
   // binary, injected Chromium flags, app path) is not ours.
   const sep = argv.indexOf("--");
@@ -27,11 +28,12 @@ function parseArgs(argv, defaultRoot) {
   for (const a of argv) {
     if (a === "-s" || a === "--single") single = true;
     else if (a === "-r" || a === "--read") { single = true; read = true; }
+    else if (a === "--slideshow") { single = true; read = true; slideshow = true; }
     else if (a === "-h" || a === "--help") return { help: true };
     else if (a.startsWith("-")) continue; // ignore unknown flags
     else root = a;
   }
-  return { root, single, read };
+  return { root, single, read, slideshow };
 }
 
 function expandTilde(p) {
@@ -117,6 +119,31 @@ async function setXattr(dir, name, value) {
   }
 }
 
+// ---- OCR for slideshow (word count) ----
+const ocrCache = new Map(); // fullpath -> {words, mtime}
+
+async function getWordCount(imagePath) {
+  try {
+    const stat = await fsp.stat(imagePath);
+    const key = imagePath;
+    const cached = ocrCache.get(key);
+    if (cached && cached.mtime === stat.mtimeMs) {
+      return cached.words;
+    }
+
+    const { stdout } = await execFileAsync("tesseract", [
+      imagePath, "stdout", "-l", "eng", "--psm", "3"
+    ], { timeout: 10000 });
+
+    const words = stdout.trim().split(/\s+/).filter(Boolean).length;
+    ocrCache.set(key, { words, mtime: stat.mtimeMs });
+    return words;
+  } catch (e) {
+    console.error("OCR failed for", imagePath, e.message);
+    return 0;
+  }
+}
+
 // ---- discovery ----
 async function findImages(dir) {
   const out = [];
@@ -171,7 +198,7 @@ app.whenReady().then(() => {
   const args = parseArgs(process.argv.slice(2), process.env.FLIP_ROOT || cfg.root);
 
   if (args.help) {
-    console.log("usage: flip [--single|--read] DIR");
+    console.log("usage: flip [--single|--read|--slideshow] DIR");
     app.quit();
     return;
   }
@@ -213,7 +240,12 @@ app.whenReady().then(() => {
         win.webContents.send("flip:comic", await discoverComic(d, id++));
       }
       if (win && !win.isDestroyed()) {
-        win.webContents.send("flip:done", { autoRead: args.read, state: readState(), titleFlash: titleFlash });
+        win.webContents.send("flip:done", { 
+          autoRead: args.read, 
+          slideshow: args.slideshow,
+          state: readState(), 
+          titleFlash: titleFlash 
+        });
       }
     } catch (e) {
       if (win && !win.isDestroyed()) {
@@ -247,6 +279,10 @@ app.whenReady().then(() => {
     } catch (e) {
       console.error("flip:star:", e && e.message);
     }
+  });
+
+  ipcMain.handle("flip:ocrWords", async (_e, imagePath) => {
+    return await getWordCount(imagePath);
   });
 });
 
