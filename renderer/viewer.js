@@ -76,11 +76,10 @@ var metaCancelBtn = document.getElementById("metaCancel");
   var slideshowActive = false;
   var wordCounts = {}; // pageIndex -> word count for current comic
 
-  // adaptive learning v2: tracks quick skips, revisits, and time spent
+  // adaptive learning v3: learns from next/prev actions per text level
   var learningEnabled = true;
-  var learnedData = {}; // bucket -> {views, totalTime, quickSkips, revisits}
+  var learnedData = {}; // bucket -> {tooShortCount, tooLongCount, baseTime}
   var lastPageStartTime = 0;
-  var lastNavDirection = 0;
 
   function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
 
@@ -585,7 +584,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
       var dur = getDuration(words);
       var learned = getLearnedDuration(words);
       info += " · " + words + " words · " + dur.toFixed(1) + "s";
-      if (learned !== null) info += " (learned from your pace)";
+      if (learned !== null) info += " (learned from your next/prev)";
       else info += " (default)";
     }
     focusCaption.textContent = info;
@@ -744,31 +743,26 @@ var metaCancelBtn = document.getElementById("metaCancel");
     if (!learningEnabled || !words) return;
     var bucket = getWordBucket(words);
     if (!learnedData[bucket]) {
-      learnedData[bucket] = { views: 0, totalTime: 0, quickSkips: 0, revisits: 0 };
+      learnedData[bucket] = { tooShortCount: 0, tooLongCount: 0, baseTime: 5.0 };
     }
     var data = learnedData[bucket];
-    data.views++;
-    data.totalTime += Math.max(1.0, seconds); // avoid negative or zero
-    if (seconds < 2.0) data.quickSkips++;
-    if (wasBack) data.revisits++;
+
+    if (wasBack) {
+      data.tooLongCount++;           // "back" = "needed more time"
+      data.baseTime = Math.min(25, data.baseTime + 1.2);
+    } else {
+      data.tooShortCount++;          // "next" = "could have been faster"
+      data.baseTime = Math.max(2.0, data.baseTime - 0.8);
+    }
     saveLearnedData();
   }
 
   function getLearnedDuration(words) {
     var bucket = getWordBucket(words);
     var data = learnedData[bucket];
-    if (!data || !data.views || data.views < 2) return null; // learn faster (after 2 samples)
+    if (!data || (data.tooShortCount + data.tooLongCount < 3)) return null;
 
-    var avgTime = data.totalTime / data.views;
-    var skipRate = (data.quickSkips || 0) / data.views;
-    var revisitRate = (data.revisits || 0) / data.views;
-
-    // Strong reaction to your actions, especially on low-text artwork
-    var skipWeight = (words < 12) ? 0.4 : 0.8;
-    var revisitWeight = (words < 12) ? 2.0 : 1.0; // back button = strong "needs more time" signal
-
-    var adjustment = 1.0 - (skipRate * skipWeight) + (revisitRate * revisitWeight);
-    return clamp(avgTime * adjustment, 5.0, SLIDESHOW_MAX);
+    return clamp(data.baseTime, 5.0, 25); // enforce minimum 5s for artwork
   }
 
   function getDuration(words) {
