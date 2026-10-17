@@ -410,6 +410,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     var imgs = readerEl.querySelectorAll("img");
     var target = imgs[index];
     if (!target) return;
+    for (var i = 0; i <= index; i++) activate(imgs[i]);
     var waits = [];
     for (var i = 0; i <= index; i++) {
       (function (img) {
