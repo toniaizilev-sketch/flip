@@ -58,6 +58,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
   var sortMode = "natural";
   var sortDesc = false;
   var starFilter = false;
+  var starReturnDir = null;
   var metaComic = null;
   var metaTags = [];
   var metaAllTags = [];
@@ -240,7 +241,13 @@ var metaCancelBtn = document.getElementById("metaCancel");
 
   function toggleStarFilter() {
     starFilter = !starFilter;
-    applyFilter();
+    if (starFilter) {
+      starReturnDir = cur ? cur.dir : null;
+      applyFilter(cur && cur.starred ? cur.dir : null);
+    } else {
+      applyFilter(starReturnDir);
+      starReturnDir = null;
+    }
   }
 
   function select(i, force) {
