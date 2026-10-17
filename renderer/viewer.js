@@ -76,6 +76,11 @@ var metaCancelBtn = document.getElementById("metaCancel");
   var slideshowActive = false;
   var wordCounts = {}; // pageIndex -> word count for current comic
 
+  // adaptive learning from manual clicking speed
+  var learningEnabled = true;
+  var learnedData = {}; // bucket -> {count: number, totalSeconds: number}
+  var lastPageStartTime = 0;
+
   function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
 
   function saveLastRead() {
@@ -581,6 +586,8 @@ var metaCancelBtn = document.getElementById("metaCancel");
     }
     focusCaption.textContent = info;
 
+    lastPageStartTime = Date.now();
+
     // prefetch next
     if (current + 1 < cur.imgs.length && !wordCounts[current + 1]) {
       prefetchWordCount(current + 1);
@@ -625,6 +632,14 @@ var metaCancelBtn = document.getElementById("metaCancel");
     } else {
       current += dir;
     }
+
+    // record manual viewing time if not in slideshow
+    if (!slideshowActive && lastPageStartTime > 0) {
+      var timeSpent = (Date.now() - lastPageStartTime) / 1000;
+      var prevWords = wordCounts[current - dir] || 0;
+      if (prevWords > 0) recordManualTime(prevWords, timeSpent);
+    }
+
     focusUpdate();
     if (slideshowActive) {
       scheduleNextSlide();
@@ -710,6 +725,59 @@ var metaCancelBtn = document.getElementById("metaCancel");
     if (focus && slideshowActive) {
       setTimeout(scheduleNextSlide, 150);
     }
+  }
+
+  // ---- adaptive learning from manual advance speed ----
+  function getWordBucket(words) {
+    if (words <= 10) return "0-10";
+    if (words <= 50) return "11-50";
+    if (words <= 120) return "51-120";
+    return "121+";
+  }
+
+  function recordManualTime(words, seconds) {
+    if (!learningEnabled || !words) return;
+    var bucket = getWordBucket(words);
+    if (!learnedData[bucket]) learnedData[bucket] = { count: 0, totalSeconds: 0 };
+    learnedData[bucket].count++;
+    learnedData[bucket].totalSeconds += seconds;
+    saveLearnedData();
+  }
+
+  function getLearnedDuration(words) {
+    var bucket = getWordBucket(words);
+    var data = learnedData[bucket];
+    if (!data || data.count < 3) return null; // not enough data yet
+    return data.totalSeconds / data.count;
+  }
+
+  function getDuration(words) {
+    var learned = getLearnedDuration(words);
+    if (learned !== null) {
+      return clamp(learned, SLIDESHOW_MIN, SLIDESHOW_MAX);
+    }
+    if (words < 8) return 5.0;
+    var seconds = SLIDESHOW_BASE + (words / wpm) * 60;
+    return clamp(seconds, SLIDESHOW_MIN, SLIDESHOW_MAX);
+  }
+
+  function saveLearnedData() {
+    try {
+      localStorage.setItem("flipSlideshowLearned", JSON.stringify(learnedData));
+    } catch (e) {}
+  }
+
+  function loadLearnedData() {
+    try {
+      var saved = localStorage.getItem("flipSlideshowLearned");
+      if (saved) learnedData = JSON.parse(saved);
+    } catch (e) {}
+  }
+
+  function resetLearning() {
+    learnedData = {};
+    saveLearnedData();
+    if (focus) focusUpdate();
   }
 
   // ---- dock & size ----
@@ -803,6 +871,17 @@ var metaCancelBtn = document.getElementById("metaCancel");
       if (slideshowActive) scheduleNextSlide();
     });
     wpmSlider.addEventListener("pointerdown", function () { sliding = true; showWpmControl(); });
+  }
+
+  // reset learning button
+  var resetBtn = document.getElementById("resetLearning");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (confirm("Reset all learned timing data from your clicking speed?")) {
+        resetLearning();
+      }
+    });
   }
 
   document.addEventListener("mousemove", function (event) {
@@ -1000,6 +1079,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     wpmSlider.value = wpm;
     wpmValue.textContent = Math.round(wpm);
   }
+  loadLearnedData();
   updateDock();
   showWpmControl();
   posEl.textContent = "loading…";
