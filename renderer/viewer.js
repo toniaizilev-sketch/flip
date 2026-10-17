@@ -639,7 +639,9 @@ var metaCancelBtn = document.getElementById("metaCancel");
     // record manual viewing time if not in slideshow
     if (!slideshowActive && lastPageStartTime > 0) {
       var timeSpent = (Date.now() - lastPageStartTime) / 1000;
-      var prevWords = wordCounts[current - dir] || 0;
+      var prevIndex = current - dir;
+      if (prevIndex < 0) prevIndex = cur.imgs.length - 1;
+      var prevWords = wordCounts[prevIndex] || wordCounts[current] || 0;
       var wasBack = (dir < 0);
       if (prevWords > 0) recordManualTime(prevWords, timeSpent, wasBack);
     }
@@ -749,10 +751,10 @@ var metaCancelBtn = document.getElementById("metaCancel");
 
     if (wasBack) {
       data.tooLongCount++;           // "back" = "needed more time"
-      data.baseTime = Math.min(25, data.baseTime + 1.2);
+      data.baseTime = Math.min(25, data.baseTime + 2.5); // stronger effect
     } else {
       data.tooShortCount++;          // "next" = "could have been faster"
-      data.baseTime = Math.max(2.0, data.baseTime - 0.8);
+      data.baseTime = Math.max(2.0, data.baseTime - 1.5); // stronger effect
     }
     saveLearnedData();
   }
@@ -760,7 +762,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
   function getLearnedDuration(words) {
     var bucket = getWordBucket(words);
     var data = learnedData[bucket];
-    if (!data || (data.tooShortCount + data.tooLongCount < 3)) return null;
+    if (!data || (data.tooShortCount + data.tooLongCount < 1)) return null;
 
     return clamp(data.baseTime, 5.0, 25); // enforce minimum 5s for artwork
   }
