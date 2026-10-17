@@ -202,7 +202,7 @@ body.focus { overflow: hidden; }
   border-radius: 8px;
   font: 13px/1.4 system-ui, sans-serif;
   color: #ddd;
-  pointer-events: none;
+  pointer-events: auto;
   user-select: none;
   z-index: 10;
   display: flex;
@@ -213,7 +213,8 @@ body.focus { overflow: hidden; }
   min-width: 210px;
 }
 
-.wpm-control.show {
+.wpm-control.show,
+.wpm-control:hover {
   pointer-events: auto;
   opacity: 1;
 }
