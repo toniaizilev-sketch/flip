@@ -585,6 +585,8 @@ var metaCancelBtn = document.getElementById("metaCancel");
     if (current + 1 < cur.imgs.length && !wordCounts[current + 1]) {
       prefetchWordCount(current + 1);
     }
+
+    showWpmControl();
   }
 
   function enterFocus() {
@@ -750,7 +752,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
 
   function showWpmControl() {
     if (wpmControl) {
-      var shouldShow = focus && (near || sliding || slideshowActive);
+      var shouldShow = focus && (slideshowActive || near || sliding);
       wpmControl.classList.toggle("show", shouldShow);
     }
   }
