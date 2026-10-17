@@ -762,23 +762,23 @@ var metaCancelBtn = document.getElementById("metaCancel");
     var skipRate = (data.quickSkips || 0) / data.views;
     var revisitRate = (data.revisits || 0) / data.views;
 
-    // Low-text pages (art) get stronger revisit bonus, weaker skip penalty
-    var skipWeight = (words < 9) ? 0.4 : 0.7;
-    var revisitWeight = (words < 9) ? 1.2 : 0.8;
+    // Low-text artwork pages: stronger bonus for going back, weaker penalty for quick skip
+    var skipWeight = (words < 12) ? 0.3 : 0.7;
+    var revisitWeight = (words < 12) ? 1.5 : 0.9;
 
     var adjustment = 1.0 - (skipRate * skipWeight) + (revisitRate * revisitWeight);
-    return clamp(avgTime * adjustment, SLIDESHOW_MIN, SLIDESHOW_MAX);
+    return clamp(avgTime * adjustment, 5.0, SLIDESHOW_MAX);
   }
 
   function getDuration(words) {
     var learned = getLearnedDuration(words);
     if (learned !== null) {
-      return clamp(learned, SLIDESHOW_MIN, SLIDESHOW_MAX);
+      return clamp(learned, 5.0, SLIDESHOW_MAX); // enforce minimum even with learning
     }
 
-    // Base time prioritizes artwork enjoyment on low-text pages
-    if (words < 9) return 6.0;                    // very low text = enjoy art
-    if (words < 36) return 4.2;                   // light dialogue
+    // Very low text = artwork to enjoy, never too short
+    if (words < 12) return 5.5;
+    if (words < 40) return 4.0;                   // light dialogue
     var seconds = 3.0 + (words / wpm) * 60;      // heavier text = more reading time
     return clamp(seconds, SLIDESHOW_MIN, SLIDESHOW_MAX);
   }
