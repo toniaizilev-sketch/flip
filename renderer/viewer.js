@@ -585,8 +585,6 @@ var metaCancelBtn = document.getElementById("metaCancel");
     if (current + 1 < cur.imgs.length && !wordCounts[current + 1]) {
       prefetchWordCount(current + 1);
     }
-
-    showWpmControl();
   }
 
   function enterFocus() {
@@ -684,7 +682,10 @@ var metaCancelBtn = document.getElementById("metaCancel");
   function startSlideshow() {
     if (!focus || !cur) return;
     slideshowActive = true;
-    showWpmControl();
+    if (wpmControl) {
+      wpmControl.classList.add("show");           // show immediately when starting
+      setTimeout(showWpmControl, 3500);           // then follow mouse hover rule
+    }
     scheduleNextSlide();
   }
 
@@ -752,7 +753,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
 
   function showWpmControl() {
     if (wpmControl) {
-      var shouldShow = focus && (slideshowActive || near || sliding);
+      var shouldShow = focus && (near || sliding);
       wpmControl.classList.toggle("show", shouldShow);
     }
   }
