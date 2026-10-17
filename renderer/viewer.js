@@ -76,9 +76,9 @@ var metaCancelBtn = document.getElementById("metaCancel");
   var slideshowActive = false;
   var wordCounts = {}; // pageIndex -> word count for current comic
 
-  // adaptive learning v3: learns from next/prev actions per text level
+  // adaptive learning v4: immediate reaction to next/prev actions
   var learningEnabled = true;
-  var learnedData = {}; // bucket -> {tooShortCount, tooLongCount, baseTime}
+  var paceMultiplier = 1.0; // global adjustment based on your next/prev actions
   var lastPageStartTime = 0;
 
   function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
@@ -742,29 +742,20 @@ var metaCancelBtn = document.getElementById("metaCancel");
   }
 
   function recordManualTime(words, seconds, wasBack) {
-    if (!learningEnabled || !words) return;
-    var bucket = getWordBucket(words);
-    if (!learnedData[bucket]) {
-      learnedData[bucket] = { tooShortCount: 0, tooLongCount: 0, baseTime: 5.0 };
-    }
-    var data = learnedData[bucket];
-
+    if (!learningEnabled) return;
     if (wasBack) {
-      data.tooLongCount++;           // "back" = "needed more time"
-      data.baseTime = Math.min(25, data.baseTime + 2.5); // stronger effect
-    } else {
-      data.tooShortCount++;          // "next" = "could have been faster"
-      data.baseTime = Math.max(2.0, data.baseTime - 1.5); // stronger effect
+      paceMultiplier = Math.min(3.0, paceMultiplier + 0.6); // back = "give me more time"
+    } else if (seconds < 3.0) {
+      paceMultiplier = Math.max(0.4, paceMultiplier - 0.4); // quick next = "can be faster"
     }
-    saveLearnedData();
+    console.log(`Learning: paceMultiplier = ${paceMultiplier.toFixed(2)} (back=${wasBack}, time=${seconds.toFixed(1)}s)`);
   }
 
   function getLearnedDuration(words) {
-    var bucket = getWordBucket(words);
-    var data = learnedData[bucket];
-    if (!data || (data.tooShortCount + data.tooLongCount < 1)) return null;
-
-    return clamp(data.baseTime, 5.0, 25); // enforce minimum 5s for artwork
+    var base = 5.5;
+    if (words > 30) base = 4.0;
+    if (words > 80) base = 3.0;
+    return clamp(base * paceMultiplier, 4.0, 25);
   }
 
   function getDuration(words) {
@@ -782,37 +773,24 @@ var metaCancelBtn = document.getElementById("metaCancel");
 
   function saveLearnedData() {
     try {
-      localStorage.setItem("flipSlideshowLearned", JSON.stringify(learnedData));
+      localStorage.setItem("flipSlideshowPace", paceMultiplier.toString());
     } catch (e) {}
   }
 
   function loadLearnedData() {
     try {
-      var saved = localStorage.getItem("flipSlideshowLearned");
-      if (saved) {
-        learnedData = JSON.parse(saved);
-      } else {
-        learnedData = {};
-      }
-      // ensure all buckets have correct shape
-      Object.keys(learnedData).forEach(function (k) {
-        var d = learnedData[k];
-        if (typeof d !== "object") learnedData[k] = {};
-        if (typeof d.views !== "number") d.views = 0;
-        if (typeof d.totalTime !== "number") d.totalTime = 0;
-        if (typeof d.quickSkips !== "number") d.quickSkips = 0;
-        if (typeof d.revisits !== "number") d.revisits = 0;
-      });
+      var saved = localStorage.getItem("flipSlideshowPace");
+      if (saved) paceMultiplier = parseFloat(saved) || 1.0;
     } catch (e) {
-      console.error("Failed to load learned data:", e);
-      learnedData = {};
+      paceMultiplier = 1.0;
     }
   }
 
   function resetLearning() {
-    learnedData = {};
+    paceMultiplier = 1.0;
     saveLearnedData();
     if (focus) focusUpdate();
+    console.log("Learning reset - paceMultiplier = 1.0");
   }
 
   // ---- dock & size ----
