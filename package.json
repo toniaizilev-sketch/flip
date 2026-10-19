@@ -1,6 +1,6 @@
 {
   "name": "flip-electron",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "private": true,
   "description": "Experimental Electron renderer for flip",
   "main": "main.js",

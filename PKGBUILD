@@ -1,9 +1,9 @@
 pkgname=flip
-pkgver=0.1.0
-pkgrel=2
+pkgver=0.2.0
+pkgrel=1
 pkgdesc="Comic and image viewer"
 arch=('any')
-depends=('electron')
+depends=('electron' 'attr')
 
 package() {
   install -d "$pkgdir/usr/lib/flip-electron"

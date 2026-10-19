@@ -12,6 +12,8 @@ const execFileAsync = promisify(execFile);
 
 const wordCache = new Map();
 
+const VERSION = require("./package.json").version;
+
 const IMAGE_EXTS = new Set([
   ".jpg", ".jpeg", ".jfif", ".png", ".gif",
   ".webp", ".bmp", ".svg", ".avif",
@@ -31,6 +33,7 @@ function parseArgs(argv, defaultRoot) {
     if (a === "-s" || a === "--single") single = true;
     else if (a === "-r" || a === "--read") { single = true; read = true; }
     else if (a === "--slideshow") { single = true; slideshow = true; }
+    else if (a === "--version" || a === "-V") return { version: true };
     else if (a === "-h" || a === "--help") return { help: true };
     else if (a.startsWith("-")) continue; // ignore unknown flags
     else root = a;
@@ -113,6 +116,20 @@ async function getXattr(dir, name) {
   }
 }
 
+async function getAllXattrs(dir) {
+  try {
+    const { stdout } = await execFileAsync("getfattr", ["-d", "--absolute-names", dir]);
+    const attrs = {};
+    for (const line of stdout.split("\n")) {
+      const m = line.match(/^user\.([^=]+)="(.*)"\s*$/);
+      if (m) attrs["user." + m[1]] = m[2];
+    }
+    return attrs;
+  } catch {
+    return {};
+  }
+}
+
 async function setXattr(dir, name, value) {
   if (value) {
     await execFileAsync("setfattr", ["-n", name, "-v", value, dir]);
@@ -164,16 +181,34 @@ async function listSubdirs(dir) {
 }
 
 async function discoverComic(dir, id) {
-  const title = (await getXattr(dir, "user.zine.title")) || path.basename(dir);
-  const author = await getXattr(dir, "user.zine.author");
-  const tagsRaw = await getXattr(dir, "user.xdg.tags");
-  const tags = tagsRaw.split(",").map((t) => t.trim()).filter(Boolean);
-  const url = await getXattr(dir, "user.zine.url");
-  const starred = !!(await getXattr(dir, "user.zine.starred"));
+  const attrs = await getAllXattrs(dir);
+  const title = attrs["user.zine.title"] || path.basename(dir);
+  const author = attrs["user.zine.author"] || "";
+  const tags = (attrs["user.xdg.tags"] || "").split(",").map((t) => t.trim()).filter(Boolean);
+  const url = attrs["user.zine.url"] || "";
+  const starred = !!attrs["user.zine.starred"];
   const imgs = sortNatural(await findImages(dir)).map((img) => path.relative(dir, img));
   let date = 0;
   try { date = (await fsp.stat(dir)).mtimeMs; } catch { /* ignore */ }
   return { id, dir, title, author, tags, url, date, starred, imgs };
+}
+
+async function mapLimit(items, limit, fn) {
+  const out = new Array(items.length);
+  let i = 0;
+  const workers = [];
+  const n = Math.min(limit, items.length);
+  for (let w = 0; w < n; w++) {
+    workers.push((async () => {
+      while (true) {
+        const idx = i++;
+        if (idx >= items.length) break;
+        out[idx] = await fn(items[idx], idx);
+      }
+    })());
+  }
+  await Promise.all(workers);
+  return out;
 }
 
 // ---- app ----
@@ -185,8 +220,13 @@ app.whenReady().then(() => {
   const titleFlash = parseTitleFlash(cfg.titleFlash);
   const args = parseArgs(process.argv.slice(2), process.env.FLIP_ROOT || cfg.root);
 
+  if (args.version) {
+    console.log("flip " + VERSION);
+    app.quit();
+    return;
+  }
   if (args.help) {
-    console.log("usage: flip [--single|--read|--slideshow] DIR");
+    console.log("usage: flip [--single|--read|--slideshow|--version] DIR");
     app.quit();
     return;
   }
@@ -222,10 +262,10 @@ app.whenReady().then(() => {
   ipcMain.on("flip:ready", async () => {
     try {
       const dirs = args.single ? [args.root] : sortNatural(await listSubdirs(args.root));
-      let id = 0;
-      for (const d of dirs) {
+      const comics = await mapLimit(dirs, 8, (d, id) => discoverComic(d, id));
+      for (const c of comics) {
         if (!win || win.isDestroyed()) return;
-        win.webContents.send("flip:comic", await discoverComic(d, id++));
+        win.webContents.send("flip:comic", c);
       }
       if (win && !win.isDestroyed()) {
         win.webContents.send("flip:done", { autoRead: args.read, state: readState(), titleFlash: titleFlash, slideshow: args.slideshow });
