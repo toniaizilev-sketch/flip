@@ -16,6 +16,11 @@ var flashEl = document.getElementById("flash");
 var jumpEl = document.getElementById("jump");
   var slider = document.getElementById("size");
   var pct = document.getElementById("pct");
+  var slideshowCtl = document.getElementById("slideshowCtl");
+  var wpmSlider = document.getElementById("wpm");
+  var wpmVal = document.getElementById("wpmVal");
+  var minArtSlider = document.getElementById("minArt");
+  var minArtVal = document.getElementById("minArtVal");
   var fsBtn = document.getElementById("fs");
   var backBtn = document.getElementById("back");
   var prevBtn = document.getElementById("prev");
@@ -48,6 +53,10 @@ var metaCancelBtn = document.getElementById("metaCancel");
   var browsePosRaf = 0;
   var flashMs = 1500;
   var flashTimer = 0;
+  var slideshow = false;
+  var slideTimer = 0;
+  var wpm = 300;
+  var minArtMs = 4000;
   var near = false, sliding = false;
   var current = 0;
   var focus = false;
@@ -563,6 +572,31 @@ var metaCancelBtn = document.getElementById("metaCancel");
     focusCaption.textContent = (current + 1) + " / " + cur.imgs.length + " — " + name;
   }
 
+  function slideDelay(words) {
+    var perWord = 60000 / wpm;
+    var maxDelay = 60000;
+    var d = minArtMs + (words || 0) * perWord;
+    return Math.max(minArtMs, Math.min(maxDelay, d));
+  }
+
+  function scheduleSlide() {
+    clearTimeout(slideTimer);
+    if (!slideshow || !focus || !cur || !cur.imgs.length) return;
+    var path = cur.dir + "/" + cur.imgs[current];
+    var idx = current;
+    if (window.flip && window.flip.wordCount) {
+      window.flip.wordCount(path).then(function (words) {
+        if (!slideshow || !focus || current !== idx) return;
+        slideTimer = setTimeout(function () { focusNav(1); }, slideDelay(words));
+      }).catch(function () {
+        if (!slideshow || !focus || current !== idx) return;
+        slideTimer = setTimeout(function () { focusNav(1); }, 4000);
+      });
+    } else {
+      slideTimer = setTimeout(function () { focusNav(1); }, 4000);
+    }
+  }
+
   function enterFocus() {
     if (!cur || !cur.imgs.length) return;
     heldJ = false; heldK = false;
@@ -576,6 +610,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
 
   function exitFocus() {
     if (!focus) return;
+    clearTimeout(slideTimer);
     focus = false;
     focusEl.classList.remove("show");
     document.body.classList.remove("focus");
@@ -585,6 +620,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
   }
 
   function focusNav(dir) {
+    clearTimeout(slideTimer);
     if (!cur || !cur.imgs.length) return;
     if (dir > 0 && current >= cur.imgs.length - 1) {
       if (!gotoComic(1)) return;
@@ -646,6 +682,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     prevBtn.classList.toggle("hidden", !read);
     nextBtn.classList.toggle("hidden", !read);
     document.getElementById("focusBtn").classList.toggle("hidden", !read);
+    slideshowCtl.classList.toggle("hidden", !slideshow);
     if (read) {
       slider.min = String(MIN_W); slider.max = String(MAX_W);
       slider.step = String(STEP_W); slider.value = String(Math.round(rw));
@@ -695,11 +732,24 @@ var metaCancelBtn = document.getElementById("metaCancel");
     }
   });
   focusEl.addEventListener("click", function () { focusNav(1); });
+  focusImg.addEventListener("load", function () { if (slideshow && focus) scheduleSlide(); });
   document.addEventListener("fullscreenchange", updateFs);
   document.addEventListener("webkitfullscreenchange", updateFs);
 
   slider.addEventListener("input", sliderInput);
   slider.addEventListener("pointerdown", function () { sliding = true; showDock(); });
+  wpmSlider.addEventListener("input", function () {
+    wpm = Number(wpmSlider.value);
+    wpmVal.textContent = String(wpm);
+    if (slideshow && focus) scheduleSlide();
+  });
+  wpmSlider.addEventListener("pointerdown", function () { sliding = true; showDock(); });
+  minArtSlider.addEventListener("input", function () {
+    minArtMs = Number(minArtSlider.value) * 1000;
+    minArtVal.textContent = String(minArtSlider.value) + "s";
+    if (slideshow && focus) scheduleSlide();
+  });
+  minArtSlider.addEventListener("pointerdown", function () { sliding = true; showDock(); });
   window.addEventListener("pointerup", function () { sliding = false; showDock(); });
   window.addEventListener("pointercancel", function () { sliding = false; showDock(); });
 
@@ -886,7 +936,14 @@ var metaCancelBtn = document.getElementById("metaCancel");
       AUTO_READ = !!opts.autoRead;
       lastRead = opts.state || {};
       if (typeof opts.titleFlash === "number") flashMs = opts.titleFlash;
-      if (AUTO_READ && COMICS.length === 1) {
+      if (opts.slideshow) slideshow = true;
+      if (opts.slideshow && COMICS.length === 1) {
+        visible = COMICS;
+        sel = 0;
+        renderList();
+        showComic();
+        enterFocus();
+      } else if (AUTO_READ && COMICS.length === 1) {
         visible = COMICS;
         sel = 0;
         renderList();

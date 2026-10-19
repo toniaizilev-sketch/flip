@@ -22,6 +22,14 @@
 <div id="dock">
   <input id="size" type="range" min="4" max="100" value="15" step="4">
   <span class="pct" id="pct">15%</span>
+  <span id="slideshowCtl" class="hidden">
+    <span class="lbl">wpm</span>
+    <input id="wpm" type="range" min="100" max="600" value="300" step="10">
+    <span class="pct" id="wpmVal">300</span>
+    <span class="lbl">min</span>
+    <input id="minArt" type="range" min="1" max="10" value="4" step="1">
+    <span class="pct" id="minArtVal">4s</span>
+  </span>
   <button type="button" id="prev">Prev</button>
   <button type="button" id="next">Next</button>
   <button type="button" id="fs">Fullscreen</button>

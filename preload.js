@@ -9,4 +9,5 @@ contextBridge.exposeInMainWorld("flip", {
   saveState: (state) => ipcRenderer.send("flip:saveState", state),
   saveMeta: (meta) => ipcRenderer.send("flip:saveMeta", meta),
   star: (p) => ipcRenderer.send("flip:star", p),
+  wordCount: (path) => ipcRenderer.invoke("flip:wordCount", path),
 });

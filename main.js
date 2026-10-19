@@ -10,6 +10,8 @@ const { promisify } = require("util");
 
 const execFileAsync = promisify(execFile);
 
+const wordCache = new Map();
+
 const IMAGE_EXTS = new Set([
   ".jpg", ".jpeg", ".jfif", ".png", ".gif",
   ".webp", ".bmp", ".svg", ".avif",
@@ -20,6 +22,7 @@ function parseArgs(argv, defaultRoot) {
   let root = defaultRoot;
   let single = false;
   let read = false;
+  let slideshow = false;
   // Only parse args after the "--" separator: everything before it (electron
   // binary, injected Chromium flags, app path) is not ours.
   const sep = argv.indexOf("--");
@@ -27,11 +30,12 @@ function parseArgs(argv, defaultRoot) {
   for (const a of argv) {
     if (a === "-s" || a === "--single") single = true;
     else if (a === "-r" || a === "--read") { single = true; read = true; }
+    else if (a === "--slideshow") { single = true; slideshow = true; }
     else if (a === "-h" || a === "--help") return { help: true };
     else if (a.startsWith("-")) continue; // ignore unknown flags
     else root = a;
   }
-  return { root, single, read };
+  return { root, single, read, slideshow };
 }
 
 function expandTilde(p) {
@@ -117,6 +121,17 @@ async function setXattr(dir, name, value) {
   }
 }
 
+async function getWordCount(imagePath) {
+  if (wordCache.has(imagePath)) return wordCache.get(imagePath);
+  let words = 0;
+  try {
+    const { stdout } = await execFileAsync("tesseract", [imagePath, "stdout"], { timeout: 15000 });
+    words = stdout.trim().split(/\s+/).filter(Boolean).length;
+  } catch { /* tesseract missing or failed */ }
+  wordCache.set(imagePath, words);
+  return words;
+}
+
 // ---- discovery ----
 async function findImages(dir) {
   const out = [];
@@ -171,7 +186,7 @@ app.whenReady().then(() => {
   const args = parseArgs(process.argv.slice(2), process.env.FLIP_ROOT || cfg.root);
 
   if (args.help) {
-    console.log("usage: flip [--single|--read] DIR");
+    console.log("usage: flip [--single|--read|--slideshow] DIR");
     app.quit();
     return;
   }
@@ -213,7 +228,7 @@ app.whenReady().then(() => {
         win.webContents.send("flip:comic", await discoverComic(d, id++));
       }
       if (win && !win.isDestroyed()) {
-        win.webContents.send("flip:done", { autoRead: args.read, state: readState(), titleFlash: titleFlash });
+        win.webContents.send("flip:done", { autoRead: args.read, state: readState(), titleFlash: titleFlash, slideshow: args.slideshow });
       }
     } catch (e) {
       if (win && !win.isDestroyed()) {
@@ -247,6 +262,10 @@ app.whenReady().then(() => {
     } catch (e) {
       console.error("flip:star:", e && e.message);
     }
+  });
+
+  ipcMain.handle("flip:wordCount", async (_e, imagePath) => {
+    return await getWordCount(imagePath);
   });
 });
 
