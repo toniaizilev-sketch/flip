@@ -621,6 +621,19 @@ var metaCancelBtn = document.getElementById("metaCancel");
     slideProgressBar.style.width = "100%";
   }
 
+  function toggleSlideshow() {
+    slideshow = !slideshow;
+    if (slideshow) {
+      slideProgressEl.classList.add("show");
+      resetProgress();
+      scheduleSlide();
+    } else {
+      clearTimeout(slideTimer);
+      slideProgressEl.classList.remove("show");
+    }
+    updateDock();
+  }
+
   function scheduleSlide() {
     clearTimeout(slideTimer);
     if (!slideshow || !focus || !cur || !cur.imgs.length) return;
@@ -885,6 +898,8 @@ var metaCancelBtn = document.getElementById("metaCancel");
         event.preventDefault(); exitFocus(); backToBrowse();
       } else if (event.key === "f" || event.key === "F") {
         event.preventDefault(); toggleFullscreen();
+      } else if (event.key === "l") {
+        event.preventDefault(); toggleSlideshow();
       } else if (event.key === ":") {
         event.preventDefault(); showJump();
       } else if (event.key === "h" || event.key === "H" || event.key === "?") {
