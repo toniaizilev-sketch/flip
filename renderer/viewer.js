@@ -404,6 +404,18 @@ var metaCancelBtn = document.getElementById("metaCancel");
     scheduleReaderPos();
   }
 
+  function openFocus(startIndex) {
+    var c = cur;
+    if (!c || !c.imgs.length) return;
+    if (typeof startIndex !== "number") {
+      var remembered = lastRead[c.dir];
+      startIndex = (typeof remembered === "number" && remembered >= 0 && remembered < c.imgs.length) ? remembered : 0;
+    }
+    current = startIndex;
+    enterFocus();
+    enterFullscreen();
+  }
+
   function renderReader(startIndex) {
     var c = cur;
     readerEl.innerHTML = "";
@@ -443,7 +455,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
   }
 
   function gotoComic(delta, toEnd) {
-    if (mode !== "read") return false;
+    if (mode !== "read" && !focus) return false;
     var target = sel + delta;
     if (target < 0 || target >= visible.length) return false;
     if (cur && cur.dir) { lastRead[cur.dir] = current; saveLastRead(); }
@@ -557,6 +569,12 @@ var metaCancelBtn = document.getElementById("metaCancel");
     else if (document.documentElement.webkitRequestFullscreen) document.documentElement.webkitRequestFullscreen();
   }
 
+  function enterFullscreen() {
+    if (fullscreenActive()) return;
+    if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+    else if (document.documentElement.webkitRequestFullscreen) document.documentElement.webkitRequestFullscreen();
+  }
+
   function updateFs() {
     fsBtn.classList.toggle("on", fullscreenActive());
   }
@@ -617,6 +635,10 @@ var metaCancelBtn = document.getElementById("metaCancel");
     var imgs = readerEl.querySelectorAll("img");
     var target = imgs[current];
     if (target) readerEl.scrollTo(0, target.offsetTop);
+    if (fullscreenActive()) {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
   }
 
   function focusNav(dir) {
@@ -802,7 +824,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     if (t && t.tagName === "IMG" && t.hasAttribute("data-index")) {
       idx = Number(t.getAttribute("data-index"));
     }
-    openReader(idx);
+    openFocus(idx);
   });
 
   document.addEventListener("keydown", function (event) {
@@ -821,7 +843,10 @@ var metaCancelBtn = document.getElementById("metaCancel");
         if (helpEl.classList.contains("show")) showHelp(false);
         else exitFocus();
       } else if (event.key === "m" || event.key === "M") {
-        event.preventDefault(); exitFocus();
+        event.preventDefault();
+        var page = current;
+        exitFocus();
+        openReader(page);
       } else if (event.key === "j" || event.key === "J" || event.key === "ArrowRight" || event.key === "ArrowDown" || event.key === " ") {
         event.preventDefault(); focusNav(1);
       } else if (event.key === "k" || event.key === "K" || event.key === "ArrowLeft" || event.key === "ArrowUp") {
@@ -902,7 +927,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     else if (event.key === "x") { event.preventDefault(); clearLastRead(); }
     else if (event.key === "r") { event.preventDefault(); toggleStar(); }
     else if (event.key === "R") { event.preventDefault(); toggleStarFilter(); }
-    else if (event.key === "Enter") { event.preventDefault(); openReader(); }
+    else if (event.key === "Enter") { event.preventDefault(); openFocus(); }
     else if (event.key === "h" || event.key === "H" || event.key === "?") { event.preventDefault(); toggleHelp(); }
     else if (event.key === "q" || event.key === "Q") { event.preventDefault(); window.close(); }
     else if (event.key === "[") { event.preventDefault(); setTW(tw - STEP_T); updateDock(); }
