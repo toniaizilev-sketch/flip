@@ -480,6 +480,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     updateDock();
     highlightLastRead();
     browsePos();
+    exitFullscreen();
   }
 
   function highlightLastRead() {
@@ -575,6 +576,12 @@ var metaCancelBtn = document.getElementById("metaCancel");
     else if (document.documentElement.webkitRequestFullscreen) document.documentElement.webkitRequestFullscreen();
   }
 
+  function exitFullscreen() {
+    if (!fullscreenActive()) return;
+    if (document.exitFullscreen) document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  }
+
   function updateFs() {
     fsBtn.classList.toggle("on", fullscreenActive());
   }
@@ -635,10 +642,6 @@ var metaCancelBtn = document.getElementById("metaCancel");
     var imgs = readerEl.querySelectorAll("img");
     var target = imgs[current];
     if (target) readerEl.scrollTo(0, target.offsetTop);
-    if (fullscreenActive()) {
-      if (document.exitFullscreen) document.exitFullscreen();
-      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-    }
   }
 
   function focusNav(dir) {
@@ -841,7 +844,11 @@ var metaCancelBtn = document.getElementById("metaCancel");
       if (event.key === "Escape") {
         event.preventDefault();
         if (helpEl.classList.contains("show")) showHelp(false);
-        else exitFocus();
+        else {
+          var wasBrowse = (mode === "browse");
+          exitFocus();
+          if (wasBrowse) exitFullscreen();
+        }
       } else if (event.key === "m" || event.key === "M") {
         event.preventDefault();
         var page = current;
