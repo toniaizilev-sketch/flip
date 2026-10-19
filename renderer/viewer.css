@@ -81,6 +81,25 @@ body.read #pos {
   text-shadow: 0 2px 4px rgba(0, 0, 0, .95), 0 0 30px rgba(0, 0, 0, .7);
 }
 #flash.show { opacity: 1; }
+#slideProgress {
+  position: fixed; top: 12px; left: 12px;
+  width: 150px; height: 6px;
+  background: rgba(0, 0, 0, .35);
+  border: 1px solid rgba(255, 255, 255, .45);
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .5);
+  opacity: 0; transition: opacity .2s ease;
+  pointer-events: none;
+  z-index: 2147483645;
+  box-sizing: border-box;
+}
+#slideProgress.show { opacity: 1; }
+#slideProgressBar {
+  width: 0%; height: 100%;
+  background: rgba(255, 255, 255, .85);
+  border-radius: 3px;
+}
 #jump {
   position: fixed; left: 50%; bottom: 60px; transform: translateX(-50%);
   width: 200px; padding: 10px 14px;

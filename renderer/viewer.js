@@ -14,6 +14,8 @@
   var posEl = document.getElementById("pos");
 var flashEl = document.getElementById("flash");
 var jumpEl = document.getElementById("jump");
+var slideProgressEl = document.getElementById("slideProgress");
+var slideProgressBar = document.getElementById("slideProgressBar");
   var slider = document.getElementById("size");
   var pct = document.getElementById("pct");
   var slideshowCtl = document.getElementById("slideshowCtl");
@@ -595,6 +597,10 @@ var metaCancelBtn = document.getElementById("metaCancel");
     focusImg.src = url;
     focusImg.alt = name;
     focusCaption.textContent = (current + 1) + " / " + cur.imgs.length + " — " + name;
+    if (slideshow && focus) {
+      slideProgressEl.classList.add("show");
+      resetProgress();
+    }
   }
 
   function slideDelay(words) {
@@ -604,21 +610,36 @@ var metaCancelBtn = document.getElementById("metaCancel");
     return Math.max(minArtMs, Math.min(maxDelay, d));
   }
 
+  function resetProgress() {
+    slideProgressBar.style.transition = "none";
+    slideProgressBar.style.width = "0%";
+  }
+
+  function startProgress(delay) {
+    void slideProgressBar.offsetWidth;
+    slideProgressBar.style.transition = "width " + delay + "ms linear";
+    slideProgressBar.style.width = "100%";
+  }
+
   function scheduleSlide() {
     clearTimeout(slideTimer);
     if (!slideshow || !focus || !cur || !cur.imgs.length) return;
     var path = cur.dir + "/" + cur.imgs[current];
     var idx = current;
+    function start(delay) {
+      slideTimer = setTimeout(function () { focusNav(1); }, delay);
+      startProgress(delay);
+    }
     if (window.flip && window.flip.wordCount) {
       window.flip.wordCount(path).then(function (words) {
         if (!slideshow || !focus || current !== idx) return;
-        slideTimer = setTimeout(function () { focusNav(1); }, slideDelay(words));
+        start(slideDelay(words));
       }).catch(function () {
         if (!slideshow || !focus || current !== idx) return;
-        slideTimer = setTimeout(function () { focusNav(1); }, 4000);
+        start(4000);
       });
     } else {
-      slideTimer = setTimeout(function () { focusNav(1); }, 4000);
+      start(4000);
     }
   }
 
@@ -631,6 +652,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     document.body.classList.add("focus");
     focusEl.classList.add("show");
     focusUpdate();
+    updateDock();
   }
 
   function exitFocus() {
@@ -639,6 +661,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     focus = false;
     focusEl.classList.remove("show");
     document.body.classList.remove("focus");
+    slideProgressEl.classList.remove("show");
     var imgs = readerEl.querySelectorAll("img");
     var target = imgs[current];
     if (target) readerEl.scrollTo(0, target.offsetTop);
