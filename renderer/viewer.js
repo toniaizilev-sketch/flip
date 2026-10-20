@@ -732,8 +732,12 @@ var metaCancelBtn = document.getElementById("metaCancel");
   }
 
   function setRW(v) {
+    var idx = current;
     rw = clamp(v, MIN_W, MAX_W);
     document.documentElement.style.setProperty("--rw", rw.toFixed(0));
+    var imgs = readerEl.querySelectorAll("img");
+    var target = imgs[idx];
+    if (target) readerEl.scrollTo(0, target.offsetTop);
   }
 
   function updateDock() {
