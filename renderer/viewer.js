@@ -66,6 +66,8 @@ var metaCancelBtn = document.getElementById("metaCancel");
   var autoRaf = 0;
   var autoSpeed = 100;
   var autoLast = 0;
+  var autoWords = {};
+  var autoPending = {};
   var near = false, sliding = false;
   var current = 0;
   var focus = false;
@@ -666,7 +668,11 @@ var metaCancelBtn = document.getElementById("metaCancel");
     var dt = (now - autoLast) / 1000;
     autoLast = now;
     if (dt > 0.1) dt = 0.1;
-    readerEl.scrollBy(0, autoSpeed * dt);
+    for (var k = 1; k <= 3; k++) prefetchWords(current + k);
+    var path = cur.dir + "/" + cur.imgs[current];
+    var words = autoWords[path];
+    var mult = (words === undefined) ? 1 : speedMultiplier(words);
+    readerEl.scrollBy(0, autoSpeed * mult * dt);
     if (atBottom()) {
       if (!gotoComic(1)) { pauseAutoscroll(); return; }
     }
@@ -677,6 +683,29 @@ var metaCancelBtn = document.getElementById("metaCancel");
     autoSpeed = clamp(autoSpeed + dir * 10, 20, 400);
     autoSpeedSlider.value = String(autoSpeed);
     autoSpeedVal.textContent = String(autoSpeed);
+  }
+
+  function speedMultiplier(words) {
+    return Math.max(0.3, 1 - (words || 0) / 150);
+  }
+
+  function prefetchWords(idx) {
+    if (idx < 0 || idx >= cur.imgs.length) return;
+    var path = cur.dir + "/" + cur.imgs[idx];
+    if (autoWords[path] !== undefined || autoPending[path]) return;
+    autoPending[path] = true;
+    if (window.flip && window.flip.wordCount) {
+      window.flip.wordCount(path).then(function (words) {
+        autoWords[path] = words;
+        autoPending[path] = false;
+      }).catch(function () {
+        autoWords[path] = 0;
+        autoPending[path] = false;
+      });
+    } else {
+      autoWords[path] = 0;
+      autoPending[path] = false;
+    }
   }
 
   function scheduleSlide() {

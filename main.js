@@ -11,6 +11,7 @@ const { promisify } = require("util");
 const execFileAsync = promisify(execFile);
 
 const wordCache = new Map();
+const wordPending = new Map();
 
 const VERSION = require("./package.json").version;
 
@@ -138,15 +139,21 @@ async function setXattr(dir, name, value) {
   }
 }
 
-async function getWordCount(imagePath) {
-  if (wordCache.has(imagePath)) return wordCache.get(imagePath);
-  let words = 0;
-  try {
-    const { stdout } = await execFileAsync("tesseract", [imagePath, "stdout"], { timeout: 15000 });
-    words = stdout.trim().split(/\s+/).filter(Boolean).length;
-  } catch { /* tesseract missing or failed */ }
-  wordCache.set(imagePath, words);
-  return words;
+function getWordCount(imagePath) {
+  if (wordCache.has(imagePath)) return Promise.resolve(wordCache.get(imagePath));
+  if (wordPending.has(imagePath)) return wordPending.get(imagePath);
+  const p = (async () => {
+    let words = 0;
+    try {
+      const { stdout } = await execFileAsync("tesseract", [imagePath, "stdout"], { timeout: 15000 });
+      words = stdout.trim().split(/\s+/).filter(Boolean).length;
+    } catch { /* tesseract missing or failed */ }
+    wordCache.set(imagePath, words);
+    wordPending.delete(imagePath);
+    return words;
+  })();
+  wordPending.set(imagePath, p);
+  return p;
 }
 
 // ---- discovery ----
