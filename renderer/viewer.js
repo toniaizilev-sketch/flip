@@ -940,7 +940,8 @@ var metaCancelBtn = document.getElementById("metaCancel");
       else if (event.key === "f" || event.key === "F") { event.preventDefault(); toggleFullscreen(); }
       else if (event.key === ":") { event.preventDefault(); showJump(); }
       else if (event.key === "h" || event.key === "H" || event.key === "?") { event.preventDefault(); toggleHelp(); }
-      else if (event.key === "q" || event.key === "Q" || event.key === "Backspace") { event.preventDefault(); backToBrowse(); }
+      else if (event.key === "q" || event.key === "Q") { event.preventDefault(); window.close(); }
+      else if (event.key === "Backspace") { event.preventDefault(); backToBrowse(); }
       else if (event.key === "Escape") {
         if (helpEl.classList.contains("show")) { event.preventDefault(); showHelp(false); }
         else if (fullscreenActive()) {
