@@ -31,6 +31,11 @@
     <input id="minArt" type="range" min="1" max="10" value="4" step="1">
     <span class="pct" id="minArtVal">4s</span>
   </span>
+  <span id="autoscrollCtl" class="hidden">
+    <span class="lbl">speed</span>
+    <input id="autoSpeed" type="range" min="20" max="400" value="100" step="10">
+    <span class="pct" id="autoSpeedVal">100</span>
+  </span>
   <button type="button" id="prev">Prev</button>
   <button type="button" id="next">Next</button>
   <button type="button" id="fs">Fullscreen</button>
@@ -43,7 +48,7 @@
   <h2>Keys — reader</h2>
   <table>
     <tr><td><kbd>j</kbd> / <kbd>k</kbd></td><td>scroll down / up (hold to keep scrolling)</td></tr>
-    <tr><td><kbd>Space</kbd> / click</td><td>next screen</td></tr>
+    <tr><td><kbd>Space</kbd></td><td>next screen</td></tr>
     <tr><td><kbd>:</kbd></td><td>jump to page</td></tr>
     <tr><td><kbd>[</kbd> / <kbd>]</kbd></td><td>narrower / wider (5%)</td></tr>
     <tr><td><kbd>Ctrl</kbd> + <kbd>wheel</kbd></td><td>resize</td></tr>
@@ -51,8 +56,9 @@
     <tr><td><kbd>0</kbd></td><td>reset width</td></tr>
     <tr><td><kbd>m</kbd></td><td>focus current image (fit to screen)</td></tr>
     <tr><td><kbd>f</kbd></td><td>toggle fullscreen</td></tr>
-    <tr><td><kbd>l</kbd></td><td>slideshow on / off</td></tr>
-    <tr><td><kbd>&larr;</kbd> / <kbd>&rarr;</kbd> or <kbd>p</kbd> / <kbd>n</kbd></td><td>prev / next comic</td></tr>
+    <tr><td>click / <kbd>l</kbd></td><td>auto-scroll (reader) / slideshow (lightbox) on / off</td></tr>
+    <tr><td><kbd>p</kbd> / <kbd>n</kbd></td><td>prev / next comic</td></tr>
+    <tr><td><kbd>&larr;</kbd> / <kbd>&rarr;</kbd></td><td>prev / next comic · speed in auto-scroll</td></tr>
     <tr><td><kbd>h</kbd> / <kbd>?</kbd></td><td>show/hide this help</td></tr>
     <tr><td><kbd>Backspace</kbd></td><td>back to list</td></tr>
     <tr><td><kbd>q</kbd></td><td>quit</td></tr>

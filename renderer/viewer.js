@@ -23,6 +23,9 @@ var slideProgressBar = document.getElementById("slideProgressBar");
   var wpmVal = document.getElementById("wpmVal");
   var minArtSlider = document.getElementById("minArt");
   var minArtVal = document.getElementById("minArtVal");
+  var autoscrollCtl = document.getElementById("autoscrollCtl");
+  var autoSpeedSlider = document.getElementById("autoSpeed");
+  var autoSpeedVal = document.getElementById("autoSpeedVal");
   var fsBtn = document.getElementById("fs");
   var backBtn = document.getElementById("back");
   var prevBtn = document.getElementById("prev");
@@ -59,6 +62,10 @@ var metaCancelBtn = document.getElementById("metaCancel");
   var slideTimer = 0;
   var wpm = 300;
   var minArtMs = 4000;
+  var autoscroll = false;
+  var autoRaf = 0;
+  var autoSpeed = 100;
+  var autoLast = 0;
   var near = false, sliding = false;
   var current = 0;
   var focus = false;
@@ -634,6 +641,44 @@ var metaCancelBtn = document.getElementById("metaCancel");
     updateDock();
   }
 
+  function pauseAutoscroll() {
+    autoscroll = false;
+    if (autoRaf) { cancelAnimationFrame(autoRaf); autoRaf = 0; }
+    updateDock();
+  }
+
+  function toggleAutoscroll() {
+    if (autoscroll) {
+      pauseAutoscroll();
+    } else {
+      autoscroll = true;
+      autoLast = 0;
+      autoRaf = requestAnimationFrame(autoScrollTick);
+      updateDock();
+    }
+  }
+
+  function autoScrollTick() {
+    autoRaf = 0;
+    if (!autoscroll || mode !== "read") { autoscroll = false; updateDock(); return; }
+    var now = Date.now();
+    if (autoLast === 0) autoLast = now;
+    var dt = (now - autoLast) / 1000;
+    autoLast = now;
+    if (dt > 0.1) dt = 0.1;
+    readerEl.scrollBy(0, autoSpeed * dt);
+    if (atBottom()) {
+      if (!gotoComic(1)) { pauseAutoscroll(); return; }
+    }
+    autoRaf = requestAnimationFrame(autoScrollTick);
+  }
+
+  function adjustAutoSpeed(dir) {
+    autoSpeed = clamp(autoSpeed + dir * 10, 20, 400);
+    autoSpeedSlider.value = String(autoSpeed);
+    autoSpeedVal.textContent = String(autoSpeed);
+  }
+
   function scheduleSlide() {
     clearTimeout(slideTimer);
     if (!slideshow || !focus || !cur || !cur.imgs.length) return;
@@ -748,6 +793,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     nextBtn.classList.toggle("hidden", !read);
     document.getElementById("focusBtn").classList.toggle("hidden", !read);
     slideshowCtl.classList.toggle("hidden", !slideshow);
+    autoscrollCtl.classList.toggle("hidden", !autoscroll);
     if (read) {
       slider.min = String(MIN_W); slider.max = String(MAX_W);
       slider.step = String(STEP_W); slider.value = String(Math.round(rw));
@@ -815,6 +861,11 @@ var metaCancelBtn = document.getElementById("metaCancel");
     if (slideshow && focus) scheduleSlide();
   });
   minArtSlider.addEventListener("pointerdown", function () { sliding = true; showDock(); });
+  autoSpeedSlider.addEventListener("input", function () {
+    autoSpeed = Number(autoSpeedSlider.value);
+    autoSpeedVal.textContent = String(autoSpeed);
+  });
+  autoSpeedSlider.addEventListener("pointerdown", function () { sliding = true; showDock(); });
   window.addEventListener("pointerup", function () { sliding = false; showDock(); });
   window.addEventListener("pointercancel", function () { sliding = false; showDock(); });
 
@@ -837,6 +888,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
 
   readerEl.addEventListener("wheel", function (event) {
     if (event.ctrlKey) return;
+    if (autoscroll) pauseAutoscroll();
     var dy = event.deltaY;
     if (event.deltaMode === 1) dy *= 16;
     else if (event.deltaMode === 2) dy *= window.innerHeight;
@@ -857,7 +909,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
 
   readerEl.addEventListener("click", function (event) {
     if (event.button !== 0) return;
-    pageDown();
+    toggleAutoscroll();
   });
 
   gridEl.addEventListener("dblclick", function (event) {
@@ -927,6 +979,7 @@ var metaCancelBtn = document.getElementById("metaCancel");
     if (mode === "read") {
       if (event.key === "j" || event.key === "J" || event.key === "k" || event.key === "K") {
         event.preventDefault();
+        if (autoscroll) pauseAutoscroll();
         var down = event.key === "j" || event.key === "J";
         if (down) heldJ = true; else heldK = true;
         if (!event.repeat) scrollLeft += (down ? 1 : -1) * window.innerHeight * 0.16;
@@ -938,10 +991,16 @@ var metaCancelBtn = document.getElementById("metaCancel");
       else if (event.key === "2") { event.preventDefault(); setRW(80); updateDock(); }
       else if (event.key === "3") { event.preventDefault(); setRW(50); updateDock(); }
       else if (event.key === " ") { event.preventDefault(); pageDown(); }
-      else if (event.key === "ArrowRight" || event.key === "n" || event.key === "N") { event.preventDefault(); gotoComic(1); }
-      else if (event.key === "ArrowLeft" || event.key === "p" || event.key === "P") { event.preventDefault(); gotoComic(-1); }
+      else if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+        event.preventDefault();
+        if (autoscroll) adjustAutoSpeed(event.key === "ArrowRight" ? 1 : -1);
+        else gotoComic(event.key === "ArrowRight" ? 1 : -1);
+      }
+      else if (event.key === "n" || event.key === "N") { event.preventDefault(); gotoComic(1); }
+      else if (event.key === "p" || event.key === "P") { event.preventDefault(); gotoComic(-1); }
       else if (event.key === "m" || event.key === "M") { event.preventDefault(); enterFocus(); }
       else if (event.key === "f" || event.key === "F") { event.preventDefault(); toggleFullscreen(); }
+      else if (event.key === "l") { event.preventDefault(); toggleAutoscroll(); }
       else if (event.key === ":") { event.preventDefault(); showJump(); }
       else if (event.key === "h" || event.key === "H" || event.key === "?") { event.preventDefault(); toggleHelp(); }
       else if (event.key === "q" || event.key === "Q") { event.preventDefault(); window.close(); }

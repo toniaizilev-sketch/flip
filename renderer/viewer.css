@@ -128,6 +128,9 @@ body.read #pos {
 #slideshowCtl { display: inline-flex; align-items: center; gap: 3px; }
 #slideshowCtl .lbl { font-size: 11px; color: #999; }
 #slideshowCtl input[type="range"] { width: 72px; }
+#autoscrollCtl { display: inline-flex; align-items: center; gap: 3px; }
+#autoscrollCtl .lbl { font-size: 11px; color: #999; }
+#autoscrollCtl input[type="range"] { width: 72px; }
 .hidden { display: none !important; }
 #help {
   position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
